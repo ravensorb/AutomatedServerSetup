@@ -1,0 +1,164 @@
+<configuration mode="DEV">
+	<computer name="SPDEV" autoLogon="10" remoteDesktop="1" timeZone="Eastern Standard Time" dhcpAllowed="0" updateHelp="0" />
+	<ieSecurity admin="0" user="1" />
+	<defaultPassword>sharePoint2013!</defaultPassword>
+	<domain name="sharepoint.dev" netBIOS="sharepoint" create="1" mode="Win2012">
+		<ou name="Applications">
+			<ou name="SharePoint">
+				<account name="spFarm.svc" 				description="SharePoint Farm Account" 						password="{DEFAULT PASSWORD}" type="spFarm" />
+				<account name="spServices.svc" 			description="SharePoint Services Account" 					password="{DEFAULT PASSWORD}" type="spServices" />
+				<account name="spAppPoolPortal.svc" 	description="SharePoint Portal App Pool Account" 			password="{DEFAULT PASSWORD}" type="spAppPoolPortal" />
+				<account name="spAppPoolProfile.svc" 	description="SharePoint My Sites App Pool Account" 			password="{DEFAULT PASSWORD}" type="spAppPoolProfile" />
+				<account name="spSearch.svc" 			description="SharePoint Search Service Account" 			password="{DEFAULT PASSWORD}" type="spSearch" />
+				<account name="spProfileSync.svc" 		description="SharePoint Profile Sync Service Account" 		password="{DEFAULT PASSWORD}" type="spProfileSync" />
+				<account name="spSearchContent.svc" 	description="SharePoint Search Content Service Account" 	password="{DEFAULT PASSWORD}" type="spSearchContent" />
+				<account name="spExcelUser.svc" 		description="SharePoint Excel Service User Account" 		password="{DEFAULT PASSWORD}" type="spExcelUser" />
+				<account name="spVisioUser.svc" 		description="SharePoint Visio Service User Account" 		password="{DEFAULT PASSWORD}" type="spVisioUser" />
+				<account name="spCacheSuperUser.svc" 	description="SharePoint Cache Super User Service Account" 	password="{DEFAULT PASSWORD}" type="spCacheSuperUser" />
+				<account name="spCacheSuprReadr.svc" 	description="SharePoint Cache Super Reader Service Account" password="{DEFAULT PASSWORD}" type="spCacheSuperReader" />
+				
+				<account name="spUser" 					description="SharePoint General User Account" 				password="{DEFAULT PASSWORD}" type="generic" />
+			</ou>
+			<ou name="Database">
+				<account name="sqlDB.svc" 		description="SQL Server Database Service Account" 			password="{DEFAULT PASSWORD}" type="sqlDB" />
+				<account name="sqlAgent.svc" 	description="SQL Server Agent Service Account" 				password="{DEFAULT PASSWORD}" type="sqlAgent" />
+				<account name="sqlSSRS.svc" 	description="SQL Server Reporting Services Service Account" password="{DEFAULT PASSWORD}" type="sqlSSRS" />
+				<account name="sqlSSAS.svc" 	description="SQL Server Analysis Services Service Account" 	password="{DEFAULT PASSWORD}" type="sqlSSAS" />
+			</ou>
+		</ou>
+	</domain>
+	<dns zone="sharepoint.dev">
+		<record type="a" name="{COMPUTER NAME}" address="{IP ADDRESS}" />
+		<record type="cname" name="{COMPUTER NAME}" alias="*.apps" />
+		<record type="cname" name="{COMPUTER NAME}" alias="corp" />
+		<record type="cname" name="{COMPUTER NAME}" alias="my" />
+		<record type="cname" name="{COMPUTER NAME}" alias="search" />
+	</dns>
+	<features source="{ONLINE}">
+		<feature>NET-Framework-Core</feature>
+		<feature>Net-Framework-Features</feature>
+		<feature>Web-Server</feature>
+		<feature>Web-WebServer</feature>
+		<feature>Web-Common-Http</feature>
+		<feature>Web-Static-Content</feature>
+		<feature>Web-Default-Doc</feature>
+		<feature>Web-Dir-Browsing</feature>
+		<feature>Web-Http-Errors</feature>
+		<feature>Web-App-Dev</feature>
+		<feature>Web-Asp-Net</feature>
+		<feature>Web-Net-Ext</feature>
+		<feature>Web-ISAPI-Ext</feature>
+		<feature>Web-ISAPI-Filter</feature>
+		<feature>Web-Health</feature>
+		<feature>Web-Http-Logging</feature>
+		<feature>Web-Log-Libraries</feature>
+		<feature>Web-Request-Monitor</feature>
+		<feature>Web-Http-Tracing</feature>
+		<feature>Web-Security</feature>
+		<feature>Web-Basic-Auth</feature>
+		<feature>Web-Windows-Auth</feature>
+		<feature>Web-Filtering</feature>
+		<feature>Web-Digest-Auth</feature>
+		<feature>Web-Performance</feature>
+		<feature>Web-Stat-Compression</feature>
+		<feature>Web-Dyn-Compression</feature>
+		<feature>Web-Mgmt-Tools</feature>
+		<feature>Web-Mgmt-Console</feature>
+		<feature>Web-Mgmt-Compat</feature>
+		<feature>Web-Metabase</feature>
+		<feature>Application-Server</feature>
+		<feature>AS-Web-Support</feature>
+		<feature>AS-TCP-Port-Sharing</feature>
+		<feature>AS-WAS-Support</feature>
+		<feature>AS-HTTP-Activation</feature>
+		<feature>AS-TCP-Activation</feature>
+		<feature>AS-Named-Pipes</feature>
+		<feature>AS-Net-Framework</feature>
+		<feature>WAS</feature>
+		<feature>WAS-Process-Model</feature>
+		<feature>WAS-NET-Environment</feature>
+		<feature>WAS-Config-APIs</feature>
+		<feature>Web-Lgcy-Scripting</feature>
+		<feature>Windows-Identity-Foundation</feature>
+		<feature>Server-Media-Foundation</feature>
+		<feature>Xps-Viewer</feature>
+	</features>
+	<chocolatey enabled="1">
+		<package name="notepadplusplus">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\NotePad++" file="notepad++.exe"/>
+		</package>
+		<package name="7zip">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\7-zip" file="7z.exe"/>
+		</package>
+		<package name="boxstarter">
+			<installCheck type="poscommand" commandName="Install-BoxstarterPackage" />
+		</package>
+		<package name="ChocolateyGUI">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\ChocolateyGUI" file="ChocolateyGUI.exe"/>
+		</package>
+		<package name="7zip.commandline">
+			<installCheck type="file" folder="{PROGRAMFILES}\7-zip" file="7za.exe"/>
+		</package>
+		<package name="sysinternals">
+			<installCheck type="file" folder="{SYSTEMDRIVE}\sysinternals" file="pslist.exe"/>
+		</package>
+		<package name="fiddler4">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Fiddler2" file="Fiddler.exe"/>
+		</package>
+		<package name="linqpad4">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\LINQPad4" file="LINQPad.exe"/>
+		</package>
+		<package name="expresso">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Ultrapico\Expresso" file="Expresso.exe"/>
+		</package>
+		<package name="logparser">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Log Parser 2.2" file="logparser.exe"/>
+		</package>
+	</chocolatey>
+	<applications baseFolder="c:\setup" prompt="0">
+		<install type="sql" order="1" name="Microsoft SQL Server" folder="\\10.0.1.8\Software\Installers\Microsoft SQL Server\sql2012" command="setup.exe" configFile="{SCRIPT FOLDER}\SQL2012Config.ini" enabled="1">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
+			<taskbarLink name="SQL Management Studio" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe" />
+		</install>
+		
+		<install type="sql" order="2" name="Microsoft SQL Server (Tabular)" folder="\\10.0.1.8\Software\Installers\Microsoft SQL Server\sql2012" command="setup.exe" configFile="{SCRIPT FOLDER}\SQL2012Config-SSASTABULAR.ini" enabled="1">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
+		</install>
+		
+		<install type="visualstudio" order="3" name="Microsoft Visual Studio" folder="\\10.0.1.8\Software\Installers\Visual Studio\vs2013" command="vs_ultimate.exe" configFile="{SCRIPT FOLDER}\VS2013Deployment.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe"/>
+			<taskbarLink name="Visual Studio" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe" />
+		</install>
+		
+		<install type="msoffice" order="3" name="Microsoft Office" folder="\\10.0.1.8\Software\Installers\Microsoft Office\msopro2013" command="setup.exe" configFile="{SCRIPT FOLDER}\MSOffice-Config.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe"/>
+			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe" />
+			<taskbarLink name="Excel" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="excel.exe" />
+			<taskbarLink name="Outlook" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="outlook.exe" />
+		</install>
+		
+		<autoSPInstaller order="9" folder="\\10.0.1.8\Software\Microsoft\Servers\SharePoint 2013\Install" configFile="{SCRIPT FOLDER}\AutoSPInstallerInput.xml" downloadPreReqs="1">
+			<install order="1" name="SQL Client Libraries" folder="{SCRIPT FOLDER}\PreReqs" command="sqlncli.msi" args="/quiet /IACCEPTSQLNCLILICENSETERMS=YES" mode="PRE" >
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="SQL Client Libraries.log"/>
+			</install>
+			<install order="2" name="Microsoft Installer Update" folder="{SCRIPT FOLDER}\PreReqs" command="setup_msipc_x64.msi" args="/quiet" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Microsoft Installer Update.log"/>
+			</install>
+			<install order="3" name="Synchronization Framework" folder="{SCRIPT FOLDER}\PreReqs" command="Synchronization.msi" args="/quiet" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Synchronization Framework.log"/>
+			</install>
+			<install order="4" name="WCF Data Services" folder="{SCRIPT FOLDER}\PreReqs" command="WcfDataServices.exe" args="/quiet" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="WCF Data Services.log"/>
+			</install>
+			<install order="5" name="Microsoft Identity Extensions" folder="{SCRIPT FOLDER}\PreReqs" command="MicrosoftIdentityExtensions-64.msi" args="/quiet" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Microsoft Identity Extensions.log"/>
+			</install>
+			<install order="6" name="Windows Server AppFabric" folder="{SCRIPT FOLDER}\PreReqs" command="WindowsServerAppFabricSetup_x64.exe" args="/i 'CacheClient','CachingService','CacheAdmin' /gac" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Windows Server AppFabric.log"/>
+			</install>
+			<install order="7" name="Windows Server AppFabric 1.1 Update" folder="{SCRIPT FOLDER}\PreReqs" command="AppFabric1.1-RTM-KB2671763-x64-ENU.exe" args="/quiet" mode="PRE">
+				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Windows Server AppFabric 1.1 Update.log"/>
+			</install>
+		</autoSPInstaller>
+	</applications>
+</configuration>
