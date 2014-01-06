@@ -1,7 +1,7 @@
 <configuration mode="DEV">
 	<computer name="SPDEV" autoLogon="10" remoteDesktop="1" timeZone="Eastern Standard Time" dhcpAllowed="0" updateHelp="0" />
 	<ieSecurity admin="0" user="1" />
-	<defaultPassword>sharePoint2013!</defaultPassword>
+	<defaultPassword>pass@word1</defaultPassword>
 	<domain name="sharepoint.dev" netBIOS="sharepoint" create="1" mode="Win2012">
 		<ou name="Applications">
 			<ou name="SharePoint">
