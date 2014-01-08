@@ -31,7 +31,7 @@ Function Get-WUServiceManager
         Add-WUOfflineSync
         Remove-WUOfflineSync
 	#>
-	[OutputType('PSWindowsUpdate.WUServiceManager')]
+	[OutputType('Utils.WUServiceManager')]
 	[CmdletBinding(
     	SupportsShouldProcess=$True,
         ConfirmImpact="Low"
