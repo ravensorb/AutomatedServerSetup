@@ -18,7 +18,7 @@ Write-Host "Configuration File: [$configurationFile]" -Foregroundcolor Yellow
 
 $configurationFile = $configurationFile.Trim() -Replace "'",""
 
-Import-Module "$workingDirectory\Utils" -Force
+Import-Module "$workingDirectory\PSUtils" -Force
 
 function Force-RunAsAdmin {
 	if (-Not (Test-IsAdmin) -and (Test-IsUacEnabled)) {
