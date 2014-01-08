@@ -1,5 +1,5 @@
 param(
-	[string] $configurationFile = "$PSScriptRoot\Configuration.xml"
+	[string] $configurationFile = "$PSScriptRoot\ServerSetup.xml"
 )
 
 $folderDesktop = [Environment]::GetFolderPath("Desktop")
@@ -24,9 +24,9 @@ function Force-RunAsAdmin {
 	if (-Not (Test-IsAdmin) -and (Test-IsUacEnabled)) {
 		Write-Warning "This script needs to be run under elevated permissions.  Please wait while we restart the script in this mode."
 		Stop-Transcript 
-        Start-Process -ExecutionPolicy ByPass -Verb Runas -WorkingDirectory $workingDirectory -FilePath PowerShell.exe -ArgumentList "$workingDirectory\Setup-Server.ps1 -configurationFile $configurationFile"
+		Start-Process -ExecutionPolicy ByPass -Verb Runas -WorkingDirectory $workingDirectory -FilePath PowerShell.exe -ArgumentList "$workingDirectory\Setup-Server.ps1 -configurationFile $configurationFile"
 		break
-    }
+	}
 }
 
 function Restart {
@@ -58,6 +58,10 @@ $result = @{}
 
 write-Host "Configuring Local Computer" -Foregroundcolor Green
 $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
+
+write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
+$result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
 
 write-Host "Renaming Local Computer" -Foregroundcolor Green
 $result["renamecomputer"] = (Execute-RenameComputer $xmlSettings)
@@ -93,7 +97,7 @@ write-Host "Creating DNS Records" -Foregroundcolor Green
 $result["dns"] = (Execute-ConfigureDNS $xmlSettings)
 
 $promptResult = 0
-if ($xmlSettings.applications.prompt -ne $null -and $([int]$xmlSettings.applications.prompt) -eq 1) {
+if ($xmlSettings.configuration.applications.prompt -ne $null -and $([int]$xmlSettings.configuration.applications.prompt) -eq 1) {
 	$promptResult = Show-YesNoQuestion -message "Do you want to install applications"
 }
 

@@ -83,8 +83,6 @@ function Execute-ConfigureLocalComputer {
 		Set-ItemProperty -LiteralPath $domainKeyPath -Name "http" -Value 1 -type DWORD
 	}
 	
-	Execute-InstallChoclatey $xmlSettings
-		
 	switch ($([int]$xmlSettings.configuration.computer.updateHelp)) {
 		0 { 
 		}
@@ -397,7 +395,7 @@ function Execute-ConfigureDNS {
 	return $true
 }
 
-function Execute-InstallChoclatey {
+function Execute-InstallChocolatey {
 	param([xml] $xmlSettings)
 
 	Write-Host "Installing Chocolatey"
@@ -721,7 +719,7 @@ function Add-PinToTaskbar {
 	
 	Write-Host "Pinning $appName to the Taskbar."
 
-	$p = Replace-TokensInString $p
+	$p = Replace-TokensInString $path
 
 	if (!(Test-Path $p)) {
 		Write-Host "Unable to find $appName ($p)" -Foregroundcolor Red
@@ -749,8 +747,8 @@ function Test-ADUser {
 	param([string] $upn)
 
 	Try {
-		Write-Host "Checking for existance of user $upn" -Foregroundcolor Yellow
-		if ((Get-ADUser $upn -ErrorAction Continue) -eq $null) {
+		Write-Host "Checking for existence of user $upn" -Foregroundcolor Yellow
+		if ((Get-ADUser $upn -ErrorAction Continue) -ne $null) {
 		#if ((Get-ADUser $upn -ErrorAction SilentlyContinue) -eq $null) {
 			Write-Host "User Found"
 
