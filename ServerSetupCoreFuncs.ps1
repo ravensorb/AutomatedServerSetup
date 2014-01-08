@@ -522,13 +522,13 @@ function Execute-AutoSPInstaller {
 	}
 		
 	Write-Host "Installing PreReq Roles and Features"
-	$cmd = "$($xmlSettings.configuration.workingDirectory)\Install-SP2013RolesFeatures.ps1"
+	$cmd = "$($xmlSettings.configuration.workingDirectory)\Tools\Install-SP2013RolesFeatures.ps1"
 	& $cmd -prompt $false
 
 	if (($([int]$appSettings.downloadPreReqs) -ne $null) -and ($([int]$appSettings.downloadPreReqs) -eq 1))
 	{
 		Write-Host "Downloading SharePoint 2013 PreReq Files"
-		$cmd = "$($xmlSettings.configuration.workingDirectory)\Download-SP2013PreReqFiles.ps1"
+		$cmd = "$($xmlSettings.configuration.workingDirectory)\Tools\Download-SP2013PreReqFiles.ps1"
 		& $cmd -SharePoint2013Path "$($xmlSettings.configuration.workingDirectory)\PreReqs"
 		Write-Host "Removing Unnecessary Files"
 		if (Test-Path "$($xmlSettings.configuration.workingDirectory)\PreReqs\Windows6.1-KB974405-x64.msu") {
