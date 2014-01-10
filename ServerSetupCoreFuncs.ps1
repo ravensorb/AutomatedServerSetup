@@ -698,7 +698,9 @@ function Execute-Install {
 	#}
 	
 	if ($install.taskbarLink -ne $null) {
-		Add-PinToTaskbar $($install.taskbarLink.name) $($install.taskbarLink.folder) $($install.taskbarLink.file)
+		foreach ($tl in $install.taskbarLink) {
+			Add-PinToTaskbar $($tl.name) $($tl.folder) $($tl.file)
+		}
 	}
 	
 	if ($networkDrive -ne $null) {
