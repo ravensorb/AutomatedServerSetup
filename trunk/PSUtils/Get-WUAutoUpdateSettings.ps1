@@ -2,11 +2,11 @@ Function Get-WUAutoUpdateSettings
 {
 	<#
 	.SYNOPSIS
-	    Gets the Microsoft Auto Update Settings
+		Gets the Microsoft Auto Update Settings
 
 	.DESCRIPTION
-	    Use Get-WUAutoUpdateSettings to get the current settings for the Microsoft Auto Update Service.
-                              		
+		Use Get-WUAutoUpdateSettings to get the current settings for the Microsoft Auto Update Service.
+									
 	.EXAMPLE
 		Get current Microsoft Update Service settings.
 	
@@ -39,14 +39,14 @@ Function Get-WUAutoUpdateSettings
 	
 	Process
 	{
-	    If ($pscmdlet.ShouldProcess($Env:COMPUTERNAME,"Set Windows Update Settings")) 
+		If ($pscmdlet.ShouldProcess($Env:COMPUTERNAME,"Set Windows Update Settings")) 
 		{
 			$objAutoUpdateSettings = (New-Object -com "Microsoft.Update.AutoUpdate").Settings
 			
 			$objAutoUpdateSettings.Refresh()
 
 			Return $objAutoUpdateSettings
-	    } #End If $pscmdlet.ShouldProcess($Env:COMPUTERNAME,"Set Windows Update Settings")		
+		} #End If $pscmdlet.ShouldProcess($Env:COMPUTERNAME,"Set Windows Update Settings")		
 
 	} #End Process
 	
