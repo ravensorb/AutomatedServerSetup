@@ -1,8 +1,15 @@
 <configuration mode="DEV">
-	<computer name="SPDEV" autoLogon="10" remoteDesktop="1" timeZone="Eastern Standard Time" dhcpAllowed="0" updateHelp="0"/>
-	<ieSecurity admin="0" user="1"/>
+	<computer name="SPDEV" autoLogon="10" remoteDesktop="1" timeZone="Eastern Standard Time" updateHelp="0">
+		<network warnOnDHCP="1" />
+		<ieSecurity admin="0" user="1"/>
+		<wupdates enabled="3" update="1" />
+		<security>
+			<account name="{CURRENT USER}" password="{DEFAULT PASSWORD}" />
+			<account name="Administrator" password="{DEFAULT PASSWORD}" />
+		</security>
+	</computer>
 	<defaultPassword>pass@word1</defaultPassword>
-	<domain name="sharepoint.dev" netBIOS="sharepoint" create="1" mode="Win2012">
+	<domain name="sharepoint.dev" netBIOS="sharepoint" action="create" mode="Win2012">
 		<ou name="Applications">
 			<ou name="SharePoint">
 				<account name="spFarm.svc" description="SharePoint Farm Account" password="{DEFAULT PASSWORD}" type="spFarm"/>

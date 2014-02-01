@@ -1,10 +1,12 @@
 param(
-	[string] $configurationFile = "$PSScriptRoot\ServerSetup.xml"
+	[string] $configurationFile = ".\ServerSetup.xml"
 )
+
+$configurationFile = (Resolve-Path $configurationFile).Path
 
 $folderDesktop = [Environment]::GetFolderPath("Desktop")
 $date = Get-Date -format "yyyyMMdd"
-Start-Transcript "$folderDesktop\Setup-Server-Transcript-$date.rtf" -Append
+Start-Transcript "$folderDesktop\Setup-Server-Transcript-$date.rtf" -Append -ErrorAction SilentlyContinue
 
 $scriptCommand = $myinvocation.mycommand.definition
 $workingDirectory = $PSScriptRoot
@@ -24,17 +26,20 @@ function Force-RunAsAdmin {
 	if (-Not (Test-IsAdmin) -and (Test-IsUacEnabled)) {
 		Write-Warning "This script needs to be run under elevated permissions.  Please wait while we restart the script in this mode."
 		Stop-Transcript 
-		Start-Process -ExecutionPolicy ByPass -Verb Runas -WorkingDirectory $workingDirectory -FilePath PowerShell.exe -ArgumentList "$workingDirectory\Setup-Server.ps1 -configurationFile $configurationFile"
+		Start-Process -ExecutionPolicy ByPass -Verb Runas -WorkingDirectory $workingDirectory -FilePath PowerShell.exe -ArgumentList "$workingDirectory\Setup-Server.ps1 -configurationFile '$configurationFile'"
 		break
 	}
 }
 
 function Restart {
-	Write-Host "Setting RunOnce: $scriptCommand"
-	Set-RunOnce -Description "SharePoint 2013 Server Set-up" -FileToRun $scriptCommand -Arguments "-configurationFile $configurationFile"
+	param([int] $step = 0)
+
+	#Set-RunOnce -Description "AutoServerSetup" -FileToRun $scriptCommand -Arguments "-configurationFile '$configurationFile'"
+	Set-RunOnce -Description "AutoServerSetup-$step" -FileToRun "$workingDirectory\ServerSetup.bat" -Arguments "'$configurationFile'"
 	
 	Write-Host "The Computer will reboot in 10 seconds...."
 	sleep 10
+	#Read-Host "Press any key to continue..."
 	Restart-Computer 
 	
 	exit
@@ -56,39 +61,43 @@ Import-Module "$workingDirectory\ServerSetupCoreFuncs.ps1" -Force
 
 $result = @{}
 
-write-Host "Configuring Local Computer" -Foregroundcolor Green
+Write-Host "Configuring Local Computer" -Foregroundcolor Green
 $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
 
-write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
-$result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
+Write-Host "Network Configuration" -Foregroundcolor Green
+$result["network"] = (Execute-NetworkConfiguration $xmlSettings)
+if ($result["network"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
 
-write-Host "Renaming Local Computer" -Foregroundcolor Green
+Write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
+$result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart 1 }
+
+Write-Host "Renaming Local Computer" -Foregroundcolor Green
 $result["renamecomputer"] = (Execute-RenameComputer $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart 2 }
 
-write-Host "Configuring Windows Update" -Foregroundcolor Green
+Write-Host "Configuring Windows Update" -Foregroundcolor Green
 $result["wupdateconfig"] = (Execute-ConfigureWindowsUpdate $xmlSettings)
 
-write-Host "Executing Windows Update" -Foregroundcolor Green
+Write-Host "Executing Windows Update" -Foregroundcolor Green
 $result["wupdate"] = (Execute-WindowsUpdate $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart 3 }
 
-write-Host "Validating Network Configuration" -Foregroundcolor Green
-$result["network"] = (Validate-NetworkConfiguration $xmlSettings)
-
-write-Host "Installing Windows Features" -Foregroundcolor Green
+Write-Host "Installing Windows Features" -Foregroundcolor Green
 $result["features"] = (Execute-InstallWindowsFeatures $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart 4 }
 
-write-Host "Installing and Configuring Active Directory" -Foregroundcolor Green
+Write-Host "Installing/Configuring Active Directory" -Foregroundcolor Green
 $result["ad"] = (Execute-ActiveDirectoryConfiguration $xmlSettings)
-if ($result["ad"] -eq $true) { Restart }
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
+if ($result["ad"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
+if ($result["ad"] -eq "error") { 
+	Write-Host "AD Installation Failed. Please review logs and rerun the script." -ForegroundColor Red
+	exit 
+} 
 
 write-Host "Creating Accounts" -Foregroundcolor Green
 $result["accounts"] = Execute-ActiveDirectoryAccountCreation $xmlSettings
@@ -111,3 +120,5 @@ If ($promptResult -eq 0)
 foreach($k in $result.keys) { Write-Host $k "-" $result.$k }
 
 Stop-Transcript
+
+exit

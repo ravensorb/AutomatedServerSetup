@@ -109,7 +109,7 @@ Function Set-RunOnce {
 		[String]$Arguments = $null,
 		
 		[Alias("UsePosh","p")]
-		[Switch]$PassScriptToPowerShell=$true,
+		[Switch]$PassScriptToPowerShell=$false,
 		
 		[Alias("psv")]
 		[Float]$PowerShellVersion=$null,
@@ -142,14 +142,13 @@ Function Set-RunOnce {
 	$RegistryKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
 	$PoSh = "C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe"
 		
+	$char0 = [char] '"'
+	$char1 = [char] "'"
+	if ($Arguments -ne $null) { $Arguments = " $Arguments" -Replace "'","""" }
+
 	If($PassScriptToPowerShell) {
-		$char0 = [char] '"'
-		$char1 = [char] "'"
-		$args = ""
 		$ver = ""
-		if ($Arguments -ne $null) { $args = " $Arguments" }
-		if (($PowerShellVersion -ne $null) -and ($PowerShellVersion -ne 0)) { $ver = " -Version " + $PowerShellVersion }
-		$FullPath = $PoSh + $ver + " -File " + $char0 + $FileToRun + $char0 + $args
+		$FullPath = $PoSh + $ver + " -File " + $char0 + $FileToRun + $char0
 		Write-Verbose "Setting RunOnce to use PowerShell..."
 		$FileToRun = $FullPath
 	}#END: If($PassScriptToPowerShell)
@@ -165,10 +164,12 @@ Function Set-RunOnce {
 		$FileToRun = $AltPath
 	}#END: If($Defer)
 
-	if (-Not $Description) { $Description = $FileToRun }
-	
-	Write-Host "Creating RunOnce subkey for $Description -> $FileToRun..." -Foregroundcolor Yellow
-	Set-ItemProperty -Path $RegistryKey -Name $Description -Value $FileToRun
+	$FullPath = $FullPath + $Arguments
 
-	Write-Verbose "Returning to marked location..."
+	if (-Not $Description) { $Description = "Set-RunOnce-PS" }
+	
+	Write-Host "Creating RunOnce Key for $Description" -Foregroundcolor Yellow
+	Write-Host "`t$FileToRun" -Foregroundcolor Yellow
+
+	Set-ItemProperty -Path $RegistryKey -Name $Description -Value $FileToRun
 }#END: Function Set-RunOnce

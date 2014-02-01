@@ -53,10 +53,14 @@ Function Set-WUAutoUpdateSettings
 	    If ($pscmdlet.ShouldProcess($Env:COMPUTERNAME,"Set Windows Update Settings")) 
 		{
 			$objAutoUpdateSettings = (New-Object -com "Microsoft.Update.AutoUpdate").Settings
-
+			
 			$objAutoUpdateSettings.NotificationLevel = $NotificationLevel
 			$objAutoUpdateSettings.IncludeRecommendedUpdates = $IncludeRecommendations
-			$objAutoUpdateSettings.FeaturedUpdatesEnabled = $IncludedFeaturedUpdates
+
+			# Note: This does not work on Windows Server 2008 and 2008 R2
+			Try {
+				$objAutoUpdateSettings.FeaturedUpdatesEnabled = $IncludedFeaturedUpdates
+			} Catch { }
 			
 			$objAutoUpdateSettings.Save()
 			
