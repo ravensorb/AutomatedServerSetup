@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>6CAFC0C6-A428-4d30-A9F9-700E829FEA51</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MyApplication</RootNamespace>
+    <AssemblyName>MyApplication</AssemblyName>
+    <Name>AutoServerSetup</Name>
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ServerSetup.ps1" />
+    <Compile Include="ServerSetupCoreFuncs.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="PSUtils\Add-WUOfflineSync.ps1" />
+    <Content Include="PSUtils\Enable-AutoLogon.ps1" />
+    <Content Include="PSUtils\Get-PendingReboot.ps1" />
+    <Content Include="PSUtils\Get-WUAutoUpdateSettings.ps1" />
+    <Content Include="PSUtils\Get-WUHistory.ps1" />
+    <Content Include="PSUtils\Get-WUInstall.ps1" />
+    <Content Include="PSUtils\Get-WUInstallerStatus.ps1" />
+    <Content Include="PSUtils\Get-WUList.ps1" />
+    <Content Include="PSUtils\Get-WURebootStatus.ps1" />
+    <Content Include="PSUtils\Get-WUServiceManager.ps1" />
+    <Content Include="PSUtils\Get-WUUninstall.ps1" />
+    <Content Include="PSUtils\Hide-WUUpdate.ps1" />
+    <Content Include="PSUtils\Invoke-Ternary.ps1" />
+    <Content Include="PSUtils\Invoke-WUInstall.ps1" />
+    <Content Include="PSUtils\PSUtils.Format.ps1xml" />
+    <Content Include="PSUtils\PSUtils.psd1" />
+    <Content Include="PSUtils\PSUtils.psm1" />
+    <Content Include="PSUtils\Remove-WUOfflineSync.ps1" />
+    <Content Include="PSUtils\Set-InternetExplorerESC.ps1" />
+    <Content Include="PSUtils\Set-LocalUserPassword.ps1" />
+    <Content Include="PSUtils\Set-RemoteDesktopConnections.ps1" />
+    <Content Include="PSUtils\Set-RunOnce.ps1" />
+    <Content Include="PSUtils\Set-TimeZone.ps1" />
+    <Content Include="PSUtils\Set-UACStatus.ps1" />
+    <Content Include="PSUtils\Set-WUAutoUpdateSettings.ps1" />
+    <Content Include="PSUtils\Show-Question.ps1" />
+    <Content Include="PSUtils\Show-YesNoQuestion.ps1" />
+    <Content Include="PSUtils\Test-ADOrganizationUnit.ps1" />
+    <Content Include="PSUtils\Test-IsAdmin.ps1" />
+    <Content Include="PSUtils\Test-IsProcessElevated.ps1" />
+    <Content Include="PSUtils\Test-IsUacEnabled.ps1" />
+    <Content Include="PSUtils\Update-WUModule.ps1" />
+    <Content Include="PSUtils\User-RunAs.ps1" />
+    <Content Include="Tools\Create-SPWorkflowFarm.ps1" />
+    <Content Include="Tools\PostSharePointInstall.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Tools\Download-MSFTUpdates.ps1" />
+    <Compile Include="Tools\Download-SP2013PreReqFiles.ps1" />
+    <Compile Include="Tools\Install-SP2013PreReqFiles.ps1" />
+    <Compile Include="Tools\Install-SP2013RolesFeatures.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="PSUtils\" />
+    <Folder Include="Tools\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Target Name="Build" />
+</Project>
