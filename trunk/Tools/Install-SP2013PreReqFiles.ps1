@@ -18,11 +18,21 @@
 # Don't forget to: Set-ExecutionPolicy RemoteSigned
 # If you have not done so already within you Windows Server 2012 server
 #****************************************************************************************
-param([string] $SharePoint2013Path = $(Read-Host -Prompt "Please enter the directory path to where your SharePoint 2013 installation files exist.")) 
+param(
+	[string] $SharePoint2013Path = $(Read-Host -Prompt "Please enter the directory path to where your SharePoint 2013 installation files exist."),
+	[string] $PreReqPath = $null 
+	) 
   
 function InstallPreReqFiles() 
 { 
 	$ReturnCode = 0
+
+	if ($PreReqPath -eq $null) {
+		$PreReqPath = "$SharePoint2013Path\PrerequisiteInstallerFiles"
+	}
+
+	$SharePoint2013Path = $SharePoint2013Path -replace "'", ""
+	$PreReqPath = $PreReqPath -replace "'", ""
 
     Write-Host ""
     Write-Host "====================================================================="
@@ -37,14 +47,14 @@ function InstallPreReqFiles()
 	Try 
 	{ 
 		 Start-Process "$SharePoint2013Path\PrerequisiteInstaller.exe" -ArgumentList "`
-																						 /SQLNCli:`"$SharePoint2013Path\PrerequisiteInstallerFiles\sqlncli.msi`" `
-																						 /IDFX:`"$SharePoint2013Path\PrerequisiteInstallerFiles\Windows6.1-KB974405-x64.msu`" `
-																						 /IDFX11:`"$SharePoint2013Path\PrerequisiteInstallerFiles\MicrosoftIdentityExtensions-64.msi`" `
-																						 /Sync:`"$SharePoint2013Path\PrerequisiteInstallerFiles\Synchronization.msi`" `
-																						 /AppFabric:`"$SharePoint2013Path\PrerequisiteInstallerFiles\WindowsServerAppFabricSetup_x64.exe`" `
-																						 /KB2671763:`"$SharePoint2013Path\PrerequisiteInstallerFiles\AppFabric1.1-RTM-KB2671763-x64-ENU.exe`" `                                                                                             
-																						 /MSIPCClient:`"$SharePoint2013Path\PrerequisiteInstallerFiles\setup_msipc_x64.msi`" `
-																						 /WCFDataServices:`"$SharePoint2013Path\PrerequisiteInstallerFiles\WcfDataServices.exe`""
+																						 /SQLNCli:`"$PreReqPath\sqlncli.msi`" `
+																						 /IDFX:`"$PreReqPath\Windows6.1-KB974405-x64.msu`" `
+																						 /IDFX11:`"$PreReqPath\MicrosoftIdentityExtensions-64.msi`" `
+																						 /Sync:`"$PreReqPath\Synchronization.msi`" `
+																						 /AppFabric:`"$PreReqPath\WindowsServerAppFabricSetup_x64.exe`" `
+																						 /KB2671763:`"$PreReqPath\AppFabric1.1-RTM-KB2671763-x64-ENU.exe`" `                                                                                             
+																						 /MSIPCClient:`"$PreReqPath\setup_msipc_x64.msi`" `
+																						 /WCFDataServices:`"$PreReqPath\WcfDataServices.exe`""
 	} 
 	Catch 
 	{ 

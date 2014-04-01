@@ -20,12 +20,12 @@ function Execute-ConfigureLocalComputer {
 	
 	Execute-ComputerSecurity $xmlSettings
 		
-	#if ($xmlSettings.configuration.computer.autoLogon -eq $null) { $xmlSettings.configuration.computer.SetAttribute("autoLogon", 10) }
+	if ($xmlSettings.configuration.computer.autoLogon -eq $null) { $xmlSettings.configuration.computer.SetAttribute("autoLogon", 0) }
 
 	if ($xmlSettings.configuration.computer.autoLogon -ne $null) {
 		Write-LogMessage -level 1 -msg "Enabling Auto login"
 		if (-Not $debug) {
-			Enable-Autologon -password $pwd -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon)
+			Enable-Autologon -password $($xmlSettings.configuration.defaultPassword) -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon)
 		}
 	}
 	
@@ -93,7 +93,7 @@ function Execute-ConfigureLocalComputer {
 }
 
 #-------------------------------------------------------------------------------------------------------------------
-# Function: Execute-RenameComputer
+# Function: Execute-ComputerSecurity
 # Description:
 #	Handles the local computer security (setting passwords)
 #-------------------------------------------------------------------------------------------------------------------
@@ -102,14 +102,14 @@ function Execute-ComputerSecurity {
 
 	if ($xmlSettings.configuration.computer.security -eq $null) { return $true }
 
-	foreach ($record in $xmlSettings.configuration.computer.security) {
+	foreach ($record in $xmlSettings.configuration.computer.security.account) {
 		$userName = $([string]$record.name)
-		$password = $([string]$record.pasword)
+		$password = $([string]$record.password)
 
 		if ($userName -eq "{CURRENT USER}") { $userName = $env:username }
-		if ($password -eq "{DEFAULT PASSWORD}") { $password = $([string]$xmlSettings.configuration.defaultPassword) }
+		if ($password -eq "{DEFAULT PASSWORD}" -or $password -eq $null) { $password = $([string]$xmlSettings.configuration.defaultPassword) }
 
-		Write-LogMessage -level 1 -msg "Settings $userName Password to: $password"
+		# Write-LogMessage -level 1 -msg "Settings '$userName' Password to: '$password'"
 		if (-Not $debug) {
 			Set-LocalUserPassword -user $userName -password $password
 
@@ -168,7 +168,7 @@ function Execute-ConfigureWindowsUpdate {
 
 	Write-LogMessage -level 1 -msg "Settings Windows Update to automatically download but not install updates"
 	if (-Not $debug) {
-		Set-WUAutoUpdateSettings -Enable -level $([int]$xmlSettings.configuration.computer.wupdates) -recommended -featured
+		Set-WUAutoUpdateSettings -Enable -level $([int]$xmlSettings.configuration.computer.wupdates.enabled) -recommended -featured
 	}
 	
 	return $true
@@ -465,25 +465,25 @@ function Execute-ActiveDirectoryProcessOU {
 	
 	Write-LogMessage -level 1 -msg "Checking for existence of group: $($ouSettings.name) in $path"
 	if (-Not (Test-ADOrganizationUnit -groupName $ouSettings.name -dn $path)) {
-		Write-LogMessage -level 1 -msg "Creating OU ($path): $($ouSettings.name)"
+		Write-LogMessage -level 2 -msg "`tCreating OU ($path): $($ouSettings.name)"
 		if (-Not $debug)
 		{
 			New-ADOrganizationalUnit -Path $path -Name $ouSettings.name
 		}
 	} else {
-		Write-LogMessage -level 1 -msg "`tGroup Exists"
+		Write-LogMessage -level 2 -msg "`tGroup Exists"
 	}
 	
 	$pwd = $($xmlSettings.configuration.defaultPassword)
-	Write-Verbose "Default Password: $pwd"
+	#Write-Verbose "`tDefault Password: $pwd"
 	$defaultPasswordSecure = ConvertTo-SecureString -String $pwd -AsPlainText -Force
 	$currentOU = "OU=" + $ouSettings.name + ",$path"
 	
 	if ($ouSettings.account -ne $null) {
-		Write-Verbose "Processing Accounts"
+		Write-Verbose "`tProcessing Accounts"
 		foreach ($account in $ouSettings.account) {
 			$pwd = $($account.password)
-			Write-Verbose "Account Password: $pwd"
+			Write-Verbose "`t`tAccount Password: $pwd"
 			if (($pwd -ne $null) -and ($pwd -ne "{DEFAULT PASSWORD}")) { 
 				$password = ConvertTo-SecureString -String $pwd -AsPlainText -Force 
 			} else { 
@@ -492,13 +492,13 @@ function Execute-ActiveDirectoryProcessOU {
 			
 			if ((Test-ADUser $($account.name)) -eq $false)
 			{
-				Write-LogMessage -level 1 -msg "Creating User ($currentOU): $($account.name)"
+				Write-LogMessage -level 2 -msg "`tCreating User ($currentOU): $($account.name)"
 				if (-Not $debug)
 				{
 					New-ADUser -Path $currentOU -AccountPassword $password -Enabled $True -Name $account.name -SamAccountName $account.name -UserPrincipalName "$($account.name)@$domain" -Description $account.description	
 				}
 			} else {
-				Write-LogMessage -level 1 -msg "Setting password for account: $($account.name)"
+				Write-LogMessage -level 2 -msg "`tSetting password for account: $($account.name)"
 				Set-ADAccountPassword -Identity $($account.name) -Reset -NewPassword $password
 			}
 		}
@@ -602,11 +602,18 @@ function Execute-ActiveDirectoryInstallation {
 	$adFeature = Get-WindowsFeature AD-Domain-Services 
 	if ($adFeature.Installed -eq $True) {
 		$pwd = $($xmlSettings.configuration.defaultPassword)
-		Write-LogMessage -level 1 -msg "Default Password: $pwd"
+		# Write-LogMessage -level 1 -msg "Default Password: $pwd"
 		$safeModePassword = ConvertTo-SecureString -String $pwd -AsPlainText -Force
 
 		$osDetails = gwmi win32_operatingsystem
-		if ($osDetails.Version -match "6.1*") {
+
+		$legacyMode = $False 
+		if (((Get-Command "Test-ADDSForestInstallation" -errorAction SilentlyContinue) -eq $null) -or ($osDetails.Version -lt "6.1")) { $legacyMode = $True }
+			
+		#if ($osDetails.Version -match "6.1*") {
+		if ($legacyMode) {
+			Write-LogMessage  -level 1 -msg "Enabling Legacy Mode For AD Installation"
+
 			$adPostConfigurationNeeded = $False
 
 			try { Get-ADForest } catch { $adPostConfigurationNeeded = $True}
@@ -647,7 +654,7 @@ function Execute-ActiveDirectoryInstallation {
 
 				return "reboot"
 			}
-		} elseif ($osDetails.Version -match "6.2*") {
+		} else { #if ($osDetails.Version -match "6.2*") {
 			if ($adFeature.PostConfigurationNeeded) {
 				Write-LogMessage -level 1 -msg "Running Pre-checks for AD Forest Installation"
 				$testADForestInstallation = Test-ADDSForestInstallation -DomainName $([string]$xmlSettings.configuration.domain.name) -SafeModeAdministratorPassword $safeModePassword
@@ -666,7 +673,7 @@ function Execute-ActiveDirectoryInstallation {
 		
 				$installADForestResult | fl
 
-				return "success"
+				return "reboot"
 			}
 		}
 						
@@ -707,24 +714,51 @@ function Execute-InstallChocolatey {
 	}
 	
 	foreach ($package in $xmlSettings.configuration.chocolatey.package) {
-		Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
-		
-		if ($package.installCheck -ne $null) {
-			$installCheckResult = Execute-InstallCheck $package.installCheck $($xmlSettings.configuration.applications.baseFolder)
+		Execute-InstallChocoPackage $package, $($xmlSettings.configuration.applications.baseFolder)
 
-			if ($installCheckResult) {
-				Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-				
-				continue
-			}
-		}
+		#Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
 		
-		if (-Not $debug) {
-			cinst $($package.name)
-		}
+		#if ($package.installCheck -ne $null) {
+		#	$installCheckResult = Execute-InstallCheck $package.installCheck $($xmlSettings.configuration.applications.baseFolder)
+
+		#	if ($installCheckResult) {
+		#		Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+				
+		#		continue
+		#	}
+		#}
+		
+		#if (-Not $debug) {
+		#	cinst $($package.name)
+		#}
 	}
 	
 	return $true
+}
+
+function Execute-InstallChocoPackage {
+	param($packageName, [string] $baseFolder)
+
+	Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
+	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
+		
+	if ($package.installCheck -ne $null) {
+		$installCheckResult = Execute-InstallCheck $package.installCheck $baseFolder
+
+		if ($installCheckResult) {
+			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+				
+			continue
+		}
+	}
+		
+	if (-Not $debug) {
+		if ($package.source -ne $null) {
+			cinst $($package.name) -source $($package.source)
+		} else {
+			cinst $($package.name)
+		}
+	}
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -758,27 +792,33 @@ function Execute-InstallApplications {
 				if ($install.owaOptions -ne $null) {
 				}
 			}
+			"choco" {
+				if ($install.package -eq $null) {
+					Write-LogMessage -level 1 -msg "`tSkipping Choco Package as it was not defined"
+				}	
+			}
 			"generic" { 
 			}
 		}
 
-		if ($args -ne $null -and $args.Length -gt 0) {
-			$args = $args -Replace "{DEFAULTPASSWORD}",$($xmlSettings.configuration.defaultPassword)
-		}
+		if (($($install.type) -eq "choco") -and $install.package -ne $null) {
+			Execute-InstallChocoPackage $install.package
+		} else {
+			if ($args -ne $null -and $args.Length -gt 0) {
+				$args = $args -Replace "{DEFAULTPASSWORD}",$($xmlSettings.configuration.defaultPassword)
+			}
 
-		$install.SetAttribute("args", $args)
-		
-		Execute-Install $($xmlSettings.configuration.applications.baseFolder) $install
+			$install.SetAttribute("args", $args)
+
+			Execute-Install $($xmlSettings.configuration.applications.baseFolder) $install
+		}
 		
 		if ((Get-PendingReboot).RebootPending -eq $true) { Write-LogMessage -level 1 -msg "Reboot Required before we can continue"; return $true }
 
 	}
 	
 	# SharePoint should be installed AFTER everything else
-	if ($xmlSettings.configuration.applications.autoSPInstaller -ne $null)
-	{
-		Execute-AutoSPInstaller $xmlSettings
-	}
+	Execute-AutoSPInstaller $xmlSettings
 		
 	return $true
 }
@@ -792,11 +832,11 @@ function Execute-AutoSPInstaller {
 	param([xml] $xmlSettings)
 
 	$applications = $xmlSettings.configuration.applications
-	$appSettings = $xmlSettings.configuration.applications.autoSPInstaller
+	$appSettings = $applications.autoSPInstaller
 
-	if ($applications -eq $null -or $appSettings -eq $null -or $([int]$appSettings.enabled) -eq 0) { return $true }
+	if ($applications -eq $null -or $appSettings -eq $null -or ($appSetings.enabled -ne $null -and $([int]$appSettings.enabled) -eq 0)) { return $true }
 
-	Write-LogMessage -level 2 -msg "Installing SharePoint via AutoSPInstaller"
+	Write-LogMessage -level 1 -msg "Installing SharePoint via AutoSPInstaller"
 
 	if ($appSettings.folder -eq $null -and $appSettings.iso -eq $null) {
 		Write-Error "Please specify either a folder path or and ISO image for your Microsoft SharePoint Installation (via AutoSPInstaller)"
@@ -820,13 +860,13 @@ function Execute-AutoSPInstaller {
 	$networkDrive = $null
 	if ($appSettings.folder -like "\\*")
 	{
-		Write-LogMessage -level 1 -msg "Network Path Detected. Mounting to local drive letter Q"
+		Write-LogMessage -level 2 -msg "Network Path Detected. Mounting to local drive letter Q"
 		$networkDrive = New-PSDrive -Name Q -Root $($appSettings.folder) -PSProvider FileSystem
 		
 		$appSettings.folder = $networkDrive.Name + ":"
 	}
 
-	Write-LogMessage -level 1 -msg "Source: $($appSettings.folder)"
+	Write-LogMessage -level 2 -msg "Source: $($appSettings.folder)"
 	$setupPath = "$($appSettings.folder)"
 	$setupCommand = "$setupPath\AutoSPInstaller\AutoSPInstallerLaunch.bat"
 	if (!(Test-Path $setupCommand)) {
@@ -837,39 +877,55 @@ function Execute-AutoSPInstaller {
 		
 	if (($([int]$appSettings.installRoles) -ne $null) -and ($([int]$appSettings.installRoles) -eq 1))
 	{
-		Write-LogMessage -level 1 -msg "Installing PreReq Roles and Features"
+		Write-LogMessage -level 2 -msg "Installing PreReq Roles and Features"
 		$cmd = "$($xmlSettings.configuration.workingDirectory)\Tools\Install-SP2013RolesFeatures.ps1"
+		Write-LogMessage -level 3 -msg "Launching: $cmd"
 		& $cmd -prompt $false
 	}
 
 	if (($([int]$appSettings.downloadPreReqs) -ne $null) -and ($([int]$appSettings.downloadPreReqs) -eq 1))
 	{
-		Write-LogMessage -level 1 -msg "Downloading SharePoint PreReq Files"
+		Write-LogMessage -level 2 -msg "Downloading SharePoint PreReq Files"
 		$cmd = "$($xmlSettings.configuration.workingDirectory)\Tools\Download-SP2013PreReqFiles.ps1"
-		& $cmd -SharePoint2013Path "$($xmlSettings.configuration.workingDirectory)\PreReqs"
+		$cmdArgs = "$($xmlSettings.configuration.workingDirectory)\PreReqs"
+		Write-LogMessage -level 3 -msg "Launching: $cmd $cmdArgs"
+		& $cmd -SharePoint2013Path $cmdArgs
 
-		$osDetails = gwmi win32_operatingsystem
-		if ($osDetails.Version -match "6.2*") {
-			Write-LogMessage -level 1 -msg "Removing Unnecessary Files"
-			if (Test-Path "$($xmlSettings.configuration.workingDirectory)\PreReqs\Windows6.1-KB974405-x64.msu") {
-				Remove-Item "$($xmlSettings.configuration.workingDirectory)\PreReqs\Windows6.1-KB974405-x64.msu"
-			}
-		}
+		#$osDetails = gwmi win32_operatingsystem
+		#if ($($osDetails.Version) -ge 6.2) {
+		#	Write-LogMessage -level 2 -msg "Removing Unnecessary Files"
+		#	if (Test-Path "$($xmlSettings.configuration.workingDirectory)\PreReqs\Windows6.1-KB974405-x64.msu") {
+		#		Remove-Item "$($xmlSettings.configuration.workingDirectory)\PreReqs\Windows6.1-KB974405-x64.msu"
+		#	}
+		#}
 	}
-	
+
+	if (($([int]$appSettings.installPreReqs) -ne $null) -and ($([int]$appSettings.installPreReqs) -eq 1))
+	{
+		Write-LogMessage -level 2 -msg "Installing PreReqs"
+		$cmd = "$($xmlSettings.configuration.workingDirectory)\Tools\Install-SP2013PreReqFiles.ps1"
+		$cmdArgs = "-SharePoint2013Path ""$setupPath"" -PreReqPath ""$($xmlSettings.configuration.workingDirectory)\PreReqs"""
+		Write-LogMessage -level 3 -msg "Launching: $cmd $cmdArgs"
+		& $cmd $cmdArgs
+	}
+
+	Write-LogMessage -level 2 -msg "Starting PRE Installations"
 	$installsOther = $appSettings.install | Where { $_.mode -eq "PRE" } | Sort-Object -Property order | ForEach-Object {
 		Execute-Install $($applications.baseFolder) $_
 	}
 	
+	Write-LogMessage -level 2 -msg "Checking for Pending Reboot"
 	if ((Get-PendingReboot).RebootPending -eq $true) { return $true }
 		
-	Write-LogMessage -level 1 -msg "Starting AutoSPInstaller"
+	Write-LogMessage -level 2 -msg "Starting AutoSPInstaller"
 	if (-Not $debug)
 	{
-		$args = "$($appSettings.configFile)"
-		& $setupCommand $args
+		$cmdArgs = "$($appSettings.configFile)"
+		Write-LogMessage -level 3 -msg "Launching: $setupCommand $cmdArgs"
+		& $setupCommand $cmdArgs
 	}
 
+	Write-LogMessage -level 2 -msg "Starting POST Installations"
 	$installsOther = $appSettings.install | Where { $_.mode -eq "POST" } | Sort-Object -Property order | ForEach-Object {
 		Execute-Install $($applications.baseFolder) $_
 	}
@@ -1010,6 +1066,8 @@ function Execute-Install {
 			$stdOutLogFile = Replace-TokensInString $stdOutLogFile $baseFolder
 			Write-LogMessage -level 1 -msg "Log File: $stdOutLogFile"
 			
+			$startTime = (Get-Date).ToString()
+
 			if ($path -like "*.msi") {
 				$args = $($install.args)
 				if (-Not ($args -like "*/log")) { $args = $args + " /log ""$stdOutLogFile""" }
@@ -1026,8 +1084,7 @@ function Execute-Install {
 			If (-not $?) {
 			}
 
-			Write-LogMessage -level 1 -msg ""
-			Write-LogMessage -level 2 -msg "Process Exist Code: "$process.ExitCode 
+			#Write-LogMessage -level 2 -msg "`tProcess Exist Code: "$process.ExitCode 
 			Write-LogMessage -level 1 -msg "-----------------------------------------------------------------------------------------------"
 		}
 		Catch {
@@ -1110,7 +1167,7 @@ function Test-ADUser {
 		Write-LogMessage -level 1 -msg "Checking for existence of user $upn" 
 		if ((Get-ADUser $upn -ErrorAction Continue) -ne $null) {
 		#if ((Get-ADUser $upn -ErrorAction SilentlyContinue) -eq $null) {
-			Write-LogMessage -level 1 -msg "User Found"
+			Write-LogMessage -level 2 -msg "`tUser Found"
 
 			return $true
 		}

@@ -2,12 +2,15 @@ param(
 	[string] $configurationFile = ".\ServerSetup.xml"
 )
 
+# Resolve the Configuration file incase a relative path was specifed 
 $configurationFile = (Resolve-Path $configurationFile).Path
 
+# Setup the transcript logging to create a file on the desktop
 $folderDesktop = [Environment]::GetFolderPath("Desktop")
 $date = Get-Date -format "yyyyMMdd"
 Start-Transcript "$folderDesktop\Setup-Server-Transcript-$date.rtf" -Append -ErrorAction SilentlyContinue
 
+# Lets get the workingDirectory
 $scriptCommand = $myinvocation.mycommand.definition
 $workingDirectory = $PSScriptRoot
 if ($workingDirectory -eq $null -or $workingDirectory.length -eq 0) {
@@ -45,16 +48,21 @@ function Restart {
 	exit
 }
 
-write-Host "Validating script is running under Administrative credentials" -Foregroundcolor Green
+Write-Host "Validating script is running under Administrative credentials" -Foregroundcolor Green
 Force-RunAsAdmin
 
-write-Host "Loading Configuration File: $configurationFile" -Foregroundcolor Green
+Write-Host "Loading Configuration File: $configurationFile" -Foregroundcolor Green
 $xmlSettings = New-Object -TypeName XML
 $xmlSettings.Load($configurationFile)
 $debug = $false
 if ($xmlSettings.configuration.mode -eq "DEBUG") { $debug = $true }
 if ($xmlSettings.configuration.workingDirectory -eq $null) {
 	$xmlSettings.configuration.SetAttribute("workingDirectory", $workingDirectory)
+}
+
+if ($xmlSettings.configuration.version -ne "1.0.0") {
+	Write-Host "Settings File Version number does not match expected version.  Possible incompatibility.  Please review the settings file and update if necessary." -ForegroundColor Red
+	exit
 }
 
 Import-Module "$workingDirectory\ServerSetupCoreFuncs.ps1" -Force
@@ -117,7 +125,7 @@ If ($promptResult -eq 0)
 	if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
 }
 
-foreach($k in $result.keys) { Write-Host $k "-" $result.$k }
+foreach($k in $result.keys) { Write-Host $k " -> " $result.$k }
 
 Stop-Transcript
 
