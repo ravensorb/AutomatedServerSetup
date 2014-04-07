@@ -22,7 +22,7 @@ function Execute-ConfigureLocalComputer {
 		
 	if ($xmlSettings.configuration.computer.autoLogon -eq $null) { $xmlSettings.configuration.computer.SetAttribute("autoLogon", 0) }
 
-	if ($xmlSettings.configuration.computer.autoLogon -ne $null) {
+	if ($xmlSettings.configuration.computer.autoLogon -ne $null -and $xmlSettings.configuration.computer.autoLogon -eq 1 -and $xmlSettings.configuration.defaultPassword -ne $null) {
 		Write-LogMessage -level 1 -msg "Enabling Auto login"
 		if (-Not $debug) {
 			Enable-Autologon -password $($xmlSettings.configuration.defaultPassword) -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon)

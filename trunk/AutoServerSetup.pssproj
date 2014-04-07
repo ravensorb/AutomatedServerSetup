@@ -31,6 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ServerSetup.bat" />
     <Compile Include="ServerSetup.ps1" />
     <Compile Include="ServerSetupCoreFuncs.ps1" />
   </ItemGroup>
