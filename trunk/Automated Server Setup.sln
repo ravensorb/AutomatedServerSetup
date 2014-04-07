@@ -7,9 +7,9 @@ Project("{F5034706-568F-408A-B7B3-4D38C6DB8A32}") = "AutoServerSetup", "AutoServ
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{7046C944-4F77-44F9-BC25-1F8B6CC49D52}"
 	ProjectSection(SolutionItems) = preProject
+		..\Samples\AutoServerSetup-Win8.xml = ..\Samples\AutoServerSetup-Win8.xml
 		..\Samples\AutoServerSetup-Sample.xml = ..\Samples\AutoServerSetup-Sample.xml
 		..\Samples\AutoServerSetup-SP2013.xml = ..\Samples\AutoServerSetup-SP2013.xml
-		..\Samples\AutoServerSetup-Surface.xml = ..\Samples\AutoServerSetup-Surface.xml
 		..\Samples\AutoSPInstallerInput-Sample.xml = ..\Samples\AutoSPInstallerInput-Sample.xml
 		..\Samples\MSOffice2013.xml = ..\Samples\MSOffice2013.xml
 		..\Samples\SQL2012-Developer-SSASTABULAR.ini = ..\Samples\SQL2012-Developer-SSASTABULAR.ini

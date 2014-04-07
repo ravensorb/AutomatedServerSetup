@@ -1,0 +1,126 @@
+<configuration mode="DEV" version="1.0.0">
+	<!-- The computer section is used to define how the computer will be configured for items like time zone, enabling remote desktop, setting passwords for key users, windows updates, etc. -->
+	<computer name="sanderson-w8sp" rename="0" remoteDesktop="1" timeZone="Eastern Standard Time" updateHelp="0">
+		<!-- Network is used to set the IP address, netmask and DNS or to just enable/disable the warning if DHCP is enabled -->
+		<network warnOnDHCP="1" />
+		<!-- ieSecurity is used to set the ESC mode for IE -->
+		<ieSecurity admin="0" user="1"/>
+		<!-- wupdates is used to setup and configure how windows updates are handled -->
+		<wupdates enabled="3" update="1" />
+	</computer>
+	<features source="{ONLINE}">
+		<feature>NET-Framework-Core</feature>
+		<feature>Net-Framework-Features</feature>
+		<feature>Xps-Viewer</feature>
+	</features>
+	<chocolatey enabled="1">
+		<package name="notepadplusplus">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\NotePad++" file="notepad++.exe"/>
+		</package>
+		<package name="7zip">
+			<installCheck type="file" folder="{PROGRAMFILES}\7-zip" file="7zFM.exe"/>
+		</package>
+		<package name="ChocolateyGUI">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\ChocolateyGUI" file="ChocolateyGUI.exe"/>
+		</package>
+		<package name="7zip.commandline">
+			<installCheck type="file" folder="{PROGRAMFILES}\7-zip" file="7z.exe"/>
+		</package>
+		<package name="sysinternals">
+			<installCheck type="file" folder="{SYSTEMDRIVE}\sysinternals" file="pslist.exe"/>
+		</package>
+		<package name="fiddler4">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Fiddler2" file="Fiddler.exe"/>
+		</package>
+		<package name="linqpad4">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\LINQPad4" file="LINQPad.exe"/>
+		</package>
+		<package name="logparser">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Log Parser 2.2" file="logparser.exe"/>
+		</package>
+		<package name="webpi">
+			<installCheck type="file" folder="{PROGRAMFILES}\Microsoft\Web Platform Installer" file="WebPlatformInstaller.exe" version="7.1.40719.0"/>
+		</package>
+		<package name="flashplayeractivex">
+		</package>
+		<package name="firefox">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Mozilla Firefox" file="firefox.exe" />
+		</package>
+		<package name="putty">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\PuTTY" file="putty.exe" />
+		</package>
+		<package name="skype">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Skype\Phone" file="Skype.exe" />
+		</package>
+		<package name="keepass">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\KeePass Password Safe 2" file="KeePass.exe" />
+		</package>
+		<package name="teamviewer">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\TeamViewer\Version9" file="TeamViewer.exe" />
+		</package>
+		<package name="foxitreader">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Foxit Software\Foxit Reader" file="Foxit Reader.exe" />
+		</package>
+		<package name="winscp">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\WinSCP" file="WinSCP.exe" />
+		</package>
+		<package name="greenshot">
+			<installCheck type="file" folder="{PROGRAMFILES}\Greenshot" file="Greenshot.exe" />
+		</package>
+		<package name="mRemoteNG">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\mRemoteNG" file="mRemoteNG.exe" />
+		</package>
+		<package name="xmind">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\XMind" file="XMind.exe" />
+		</package>
+		<package name="sudo">
+			<installCheck type="file" folder="C:\Chocolatey\bin" file="sudo.bat" />
+		</package>
+		<package name="WindowsUpdate.DisableAutoRestart">
+		</package>
+		<package name="ulsviewer">
+			<installCheck type="file" folder="C:\Chocolatey\lib\ulsviewer.1.0.0.3088" file="UlsViewer.exe" />
+		</package>
+		<package name="netscan64">
+			<installCheck type="file" folder="C:\Chocolatey\lib\netscan64.5.4.9\tools" file="netscan64.exe" />
+		</package>
+		<package name="crashplan">
+			<installCheck type="file" folder="{PROGRAMFILES}\CrashPlan" file="CrashPlanDesktop.exe" />
+		</package>
+		<package name="notepadreplacer">
+			<installCheck type="file" folder="{PROGRAMFILES}\Notepad Replacer" file="NotepadReplacer.exe" />
+		</package>
+		<package name="compareit">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Compare It!" file="wincmp3.exe" />
+		</package>
+		<package name="Fitbit.Connect">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Fitbit Connect" file="Fitbit Connect.exe" />
+		</package>
+		<package name="transgui">
+			<installCheck type="file" folder="{PROGRAMFILES}\Transmission Remote" file="Transmission Remote.exe" />
+		</package>
+		<package name="start8">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Stardock\Start8" file="Start8.exe"/>
+		</package>
+	</chocolatey>
+	<applications baseFolder="c:\Software" prompt="0">
+		<install type="visualstudio" order="3" name="Microsoft Visual Studio" folder="{BASE FOLDER}\Visual Studio\vs2013\ultimate" command="vs_ultimate.exe" configFile="{SCRIPT FOLDER}\Config\VS2013-Ultimate.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe"/>
+			<taskbarLink name="Visual Studio" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe"/>
+		</install>
+		<install type="msoffice" order="4" name="Microsoft Office" folder="{BASE FOLDER}\Microsoft Office\msopro2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe"/>
+			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe"/>
+			<taskbarLink name="Excel" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="excel.exe"/>
+			<taskbarLink name="Outlook" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="outlook.exe"/>
+		</install>
+		<install type="msoffice" order="5" name="Microsoft Visio" folder="{BASE FOLDER}\Microsoft Office\msviso2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="visio.exe"/>
+			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="visio.exe"/>
+		</install>
+		<install type="msoffice" order="6" name="Microsoft Project" folder="{BASE FOLDER}\Microsoft Office\msprj2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winproj.exe"/>
+			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winproj.exe"/>
+		</install>
+	</applications>
+</configuration>

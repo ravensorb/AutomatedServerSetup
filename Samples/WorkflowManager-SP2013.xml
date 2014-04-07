@@ -1,0 +1,29 @@
+<Settings>
+	<SiteUrl>http://portal.sharepoint.dev</SiteUrl>
+
+	<!--Delete DBPrefix tag, if you don't want any prefix-->
+	<DBPrefix>SharePoint</DBPrefix>
+
+	<!--Key used to generate certificates-->
+	<CertificationKey>pass@word1</CertificationKey>
+
+	<!--Database server name, database names are hardcoded in powershell-->
+	<DBServer>SharePointDB</DBServer>
+
+	<!--Format should be USERNAME@DOMAIN-->
+	<WFManagerRunAsUser>spWorkflow.svc@sharepoint.dev</WFManagerRunAsUser>
+	<WFManagerRunAsPassword>pass@word1</WFManagerRunAsPassword>
+
+	<!--dot (.) not allowed-->
+	<WorkflowNamespace>WorkflowNamespace</WorkflowNamespace>
+
+	<!--To work with workflow, app management service need to be provisioned-->
+	<AppManagementService Provision="true">
+		<Name>App Management Service Application</Name>
+		<DBName>AppManagementServiceDB</DBName>
+		<!--If managed account already exists with the same name, the existing one will be used-->
+		<ManagedAccountUserName></ManagedAccountUserName>
+		<ManagedAccountPassword></ManagedAccountPassword>
+		<AppPoolName>App Management Service App Pool</AppPoolName>
+	</AppManagementService>
+</Settings>
