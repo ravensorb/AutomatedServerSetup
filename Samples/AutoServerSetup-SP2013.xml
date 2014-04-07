@@ -134,11 +134,13 @@
 		<package name="webpi">
 			<installCheck type="file" folder="{PROGRAMFILES}\Microsoft\Web Platform Installer" file="WebPlatformInstaller.exe" version="7.1.40719.0"/>
 		</package>
+		<package name="hmailserver">
+		</package>
 		<package name="classic-shell">
 			<installCheck type="file" folder="{PROGRAMFILES}\Classic Shell" file="ClassicStartMenu.exe"/>
 		</package>
 	</chocolatey>
-	<applications baseFolder="\\10.0.1.8\Software\Installers" prompt="0">
+	<applications baseFolder="c:\Software" prompt="0">
 		<install type="sql" order="1" name="Microsoft SQL Server" folder="{BASE FOLDER}\Microsoft SQL Server\sql2012" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\SQL2012-Developer.ini" enabled="1">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
 			<taskbarLink name="SQL Management Studio" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
@@ -185,14 +187,6 @@
 			</install>
 			<install order="7" name="Windows Server AppFabric 1.1 Update" folder="{SCRIPT FOLDER}\PreReqs" command="AppFabric1.1-RTM-KB2671763-x64-ENU.exe" args="/quiet" mode="PRE">
 				<installCheck type="file" folder="{SCRIPT FOLDER}" file="Windows Server AppFabric 1.1 Update.log"/>
-			</install>
-			<install type="choco" order="1" name="Windows Workflow Manager" mode="POST">
-				<package name="WorkflowManager" source="webpi">
-					<installCheck type="file" folder="{PROGRAMFILESX86}\Fiddler2" file="Fiddler.exe"/>
-				</package>
-			</install>
-			<install type="ps" order="2" name="SharePoint Post Configuration" folder="{SCRIPT FOLDER}\Tools" command="PostSharePointInstall.ps1" mode="POST">
-				
 			</install>
 		</autoSPInstaller>
 	</applications>
