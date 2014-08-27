@@ -1,20 +1,20 @@
-Function Test-ADOrganizationUnit {
+Function Test-ADGroup {
 <# 
 	.Synopsis 
-		Tests to see if the specified AD Orgnaiation Unit Exists
+		Tests to see if the specified AD Group Exists
 	.Description 
-		This script verifies the existing of the specified AD Orgnaiational unit
+		This script verifies the existing of the specified AD Group
 	
 	PARAMETERS 
 		-dn the distinguished name (defaults to the current domain)
-		-ouName the name of the group to validate
+		-groupName the name of the group to validate
 	.Example 
-		Test-ADOrganizationUnit.ps1 -name Applications
+		Test-ADGroup.ps1 -groupName Applications
 	
 		Returns True or False depending on if the group "Applications" exists
 
 	.Notes 
-		NAME:  Test-ADOrganizationUnit
+		NAME:  Test-ADGRoup
 		AUTHOR: Shawn Anderson
 		LASTEDIT: 08/26/2014
 		KEYWORDS: 
@@ -30,13 +30,9 @@ Function Test-ADOrganizationUnit {
 	try {
 		if (-Not ($dn)) { $dn = ([adsi]'').distinguishedName }
 
-		Write-Verbose "Checking for OU $name in $dn"
+		Write-Verbose "Checking for group $name in $($dn)"
 		
-		$adUnit = (Get-ADOrganizationalUnit -LDAPFilter "(name=$name)" -SearchBase $($dn))
-		if ($adUnit -eq $null) {
-			Write-Verbose "Checking for Container $name in $dn"
-			$adUnit = (Get-ADObject -LDAPFilter "(&(name=$name)(objectClass=container))" -SearchBase $($dn))
-		}
+		$adUnit = (Get-ADGroup -LDAPFilter "(name=$name)" -SearchBase $dn)
 		
 		Write-Verbose "AD Unit: $adUnit"
 

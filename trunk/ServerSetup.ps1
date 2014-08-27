@@ -99,7 +99,7 @@ Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 4 }
 
 Write-Host "Installing/Configuring Active Directory" -Foregroundcolor Green
-$result["ad"] = (Execute-ActiveDirectoryConfiguration $xmlSettings)
+$result["ad"] = (New-ADConfiguration -XmlData $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ($result["ad"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
 if ($result["ad"] -eq "error") { 
@@ -108,7 +108,7 @@ if ($result["ad"] -eq "error") {
 } 
 
 write-Host "Creating Accounts" -Foregroundcolor Green
-$result["accounts"] = Execute-ActiveDirectoryAccountCreation $xmlSettings
+$result["accounts"] = Add-ADObjects -XmlData $xmlSettings
 
 write-Host "Creating DNS Records" -Foregroundcolor Green
 $result["dns"] = (Execute-ConfigureDNS $xmlSettings)
