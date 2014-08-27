@@ -36,6 +36,9 @@
     <Compile Include="ServerSetupCoreFuncs.ps1" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Create-BuildPackage.ps1" />
+    <Content Include="PSUtils\Add-ADObjects.ps1" />
+    <Content Include="PSUtils\Add-DNSEntries.ps1" />
     <Content Include="PSUtils\Add-WUOfflineSync.ps1" />
     <Content Include="PSUtils\Enable-AutoLogon.ps1" />
     <Content Include="PSUtils\Get-PendingReboot.ps1" />
@@ -50,6 +53,7 @@
     <Content Include="PSUtils\Hide-WUUpdate.ps1" />
     <Content Include="PSUtils\Invoke-Ternary.ps1" />
     <Content Include="PSUtils\Invoke-WUInstall.ps1" />
+    <Content Include="PSUtils\New-ADConfiguration.ps1" />
     <Content Include="PSUtils\PSUtils.Format.ps1xml" />
     <Content Include="PSUtils\PSUtils.psd1" />
     <Content Include="PSUtils\PSUtils.psm1" />
@@ -63,6 +67,8 @@
     <Content Include="PSUtils\Set-WUAutoUpdateSettings.ps1" />
     <Content Include="PSUtils\Show-Question.ps1" />
     <Content Include="PSUtils\Show-YesNoQuestion.ps1" />
+    <Content Include="PSUtils\Test-ADUser.ps1" />
+    <Content Include="PSUtils\Test-ADGroup.ps1" />
     <Content Include="PSUtils\Test-ADOrganizationUnit.ps1" />
     <Content Include="PSUtils\Test-IsAdmin.ps1" />
     <Content Include="PSUtils\Test-IsProcessElevated.ps1" />
