@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<configuration version="1.0.0">
+	<dns zone="sharepoint.dev">
+		<record type="a" name="{COMPUTER NAME}" address="{IP ADDRESS}"/>
+		<record type="cname" name="{COMPUTER NAME}" alias="*.apps"/>
+		<record type="cname" name="{COMPUTER NAME}" alias="corp"/>
+		<record type="cname" name="{COMPUTER NAME}" alias="portal"/>
+		<record type="cname" name="{COMPUTER NAME}" alias="my"/>
+		<record type="cname" name="{COMPUTER NAME}" alias="search"/>
+	</dns>
+</configuration>
