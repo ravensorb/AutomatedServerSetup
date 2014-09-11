@@ -5,6 +5,7 @@ $SourceFiles = @{
 					"..\license.txt" = "";
 					".\PSUtils" = ""; 
 					".\Tools" = "";
+					".\Carbon" = "";
 					"ServerSetup.bat" = ""; 
 					"ServerSetup.ps1" = "";
 					"ServerSetupCoreFuncs.ps1" = "";
