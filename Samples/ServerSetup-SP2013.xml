@@ -24,15 +24,23 @@
 				<account name="spServices.svc" description="SharePoint Services Account" password="{DEFAULT PASSWORD}" type="spServices"/>
 				<account name="spAppPoolPortal.svc" description="SharePoint Portal App Pool Account" password="{DEFAULT PASSWORD}" type="spAppPoolPortal"/>
 				<account name="spAppPoolProfile.svc" description="SharePoint My Sites App Pool Account" password="{DEFAULT PASSWORD}" type="spAppPoolProfile"/>
-				<account name="spSearch.svc" description="SharePoint Search Service Account" password="{DEFAULT PASSWORD}" type="spSearch"/>
 				<account name="spProfileSync.svc" description="SharePoint Profile Sync Service Account" password="{DEFAULT PASSWORD}" type="spProfileSync"/>
+				<account name="spUserProfile.svc" description="SharePoint User Profile Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spSearch.svc" description="SharePoint Search Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
 				<account name="spSearchContent.svc" description="SharePoint Search Content Service Account" password="{DEFAULT PASSWORD}" type="spSearchContent"/>
 				<account name="spExcelUser.svc" description="SharePoint Excel Service User Account" password="{DEFAULT PASSWORD}" type="spExcelUser"/>
 				<account name="spPerfPointUser.svc" description="SharePoint Performance Point Service User Account" password="{DEFAULT PASSWORD}" type="spPerformancePointUser"/>
 				<account name="spVisioUser.svc" description="SharePoint Visio Service User Account" password="{DEFAULT PASSWORD}" type="spVisioUser"/>
+				<account name="spPowerPoint.svc" description="SharePoint PowerPoint Conversion Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spAccess.svc" description="SharePoint Access Services Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
 				<account name="spCacheSuperUser.svc" description="SharePoint Cache Super User Service Account" password="{DEFAULT PASSWORD}" type="spCacheSuperUser"/>
 				<account name="spCacheSuprReadr.svc" description="SharePoint Cache Super Reader Service Account" password="{DEFAULT PASSWORD}" type="spCacheSuperReader"/>
 				<account name="spWorkflow.svc" description="SharePoint Workflow Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spC2WTS.svc" description="SharePoint Claims To Windows Token Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spApps.svc" description="SharePoint App Management Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spTranslation.svc" description="SharePoint Machine Translation Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spWorkMgt.svc" description="SharePoint Work Management Service Account" password="{DEFAULT PASSWORD}" type="generic"/>
+				<account name="spPowerShell.svc" description="SharePoint PowerShell Account" password="{DEFAULT PASSWORD}" type="generic"/>
 				<account name="spUser" description="SharePoint General User Account" password="{DEFAULT PASSWORD}" type="generic"/>
 			</ou>
 			<ou name="Database">
@@ -203,32 +211,73 @@
 			<installCheck type="file" folder="C:\Chocolatey\bin" file="sudo.bat" />
 		</package>
 	</chocolatey>
-	<applications baseFolder="C;\Software" prompt="0">
-		<install type="sql" order="1" name="Microsoft SQL Server" folder="{BASE FOLDER}\Microsoft SQL Server\sql2012" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\SQL2012-Developer.ini" enabled="1">
+	<!-- 
+		Applictions to install 
+		Base Path indicates where the defalt location is for all of the software installs
+		Prompt indicates if the script should pause with a prompt before starting the software install
+	-->
+	<applications baseFolder="\\192.168.58.1\Software" prompt="0">
+		<!-- 
+			Application: SQL Server Developer Edition
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the Ssms.exe (SQL Server Management Studio application)
+					Pin an ICON for SQL Server Management Studio to the Taskbar
+		-->
+		<install type="sql" order="1" name="Microsoft SQL Server" iso="{BASE FOLDER}\en_sql_server_2012_developer_edition_with_service_pack_2_x64_dvd_4668513.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\SQL2012-Developer.ini" enabled="1">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
 			<taskbarLink name="SQL Management Studio" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
 		</install>
-		<install type="sql" order="2" name="Microsoft SQL Server (Tabular)" folder="{BASE FOLDER}\Microsoft SQL Server\sql2012" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\SQL2012-Developer-SSASTABULAR.ini" enabled="1">
+		<!-- 
+			Application: SQL Server Developer Edition - SSAS in Tabular Mode
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the SSAS folder
+		-->
+		<install type="sql" order="2" name="Microsoft SQL Server (Tabular)" iso="{BASE FOLDER}\en_sql_server_2012_developer_edition_with_service_pack_2_x64_dvd_4668513.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\SQL2012-Developer-SSASTABULAR.ini" enabled="1">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
 		</install>
-		<install type="visualstudio" order="3" name="Microsoft Visual Studio" folder="{BASE FOLDER}\Visual Studio\vs2013\ultimate" command="vs_ultimate.exe" configFile="{SCRIPT FOLDER}\Config\VS2013-Ultimate.xml">
+		<!-- 
+			Application: Visual Studio 2013 Professional with Update 3
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the devenv.exe (Visual Studio IDE Application)
+					Pin an ICON for Visual Studio IDE to the Taskbar
+		-->
+		<install type="visualstudio" order="3" name="Microsoft Visual Studio" iso="{BASE FOLDER}\en_visual_studio_professional_2013_with_update_3_x86_dvd_4836427.iso" command="vs_professional.exe" configFile="{SCRIPT FOLDER}\VS2013-Pro.xml">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe"/>
 			<taskbarLink name="Visual Studio" folder="{PROGRAMFILESX86}\Microsoft Visual Studio 12.0\Common7\IDE" file="devenv.exe"/>
 		</install>
-		<install type="msoffice" order="4" name="Microsoft Office" folder="{BASE FOLDER}\Microsoft Office\msopro2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+		<!-- 
+			Application: Microsoft Office Professional
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the winword.exe (Microsoft Word application)
+					Pin an ICON for Word, Excel, and Outlook to the Taskbar
+		-->
+		<install type="msoffice" order="4" name="Microsoft Office" iso="{BASE FOLDER}\en_office_professional_plus_2013_with_sp1_x86_and_x64_dvd_3928186.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\MSOffice2013.xml">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe"/>
 			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winword.exe"/>
 			<taskbarLink name="Excel" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="excel.exe"/>
 			<taskbarLink name="Outlook" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="outlook.exe"/>
 		</install>
-		<install type="msoffice" order="5" name="Microsoft Visio" folder="{BASE FOLDER}\Microsoft Office\msviso2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+		<!-- 
+			Application: Microsoft Visio Professional
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the visio.exe (Microsoft Visio application)
+					Pin an ICON for Viso to the Taskbar
+		-->
+		<install type="msoffice" order="5" name="Microsoft Visio" iso="{BASE FOLDER}\en_visio_professional_2013_with_sp1_x86_and_x64_dvd_3910950.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\MSOffice2013.xml">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="visio.exe"/>
 			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="visio.exe"/>
 		</install>
-		<install type="msoffice" order="6" name="Microsoft Project" folder="{BASE FOLDER}\Microsoft Office\msprj2013" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\MSOffice2013.xml">
+		<!-- 
+			Application: Microsoft Project Professional
+			Notes: Install from an ISO and use the configuration file as the "answer file"
+					Validate if install is complete by looking for the winproj.exe (Microsoft Project application)
+					Pin an ICON for Project to the Taskbar
+		-->
+		<install type="msoffice" order="6" name="Microsoft Project" iso="{BASE FOLDER}\en_project_professional_2013_with_sp1_x86_and_x64_dvd_3911496.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\MSOffice2013.xml">
 			<installCheck type="file" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winproj.exe"/>
 			<taskbarLink name="Word" folder="{PROGRAMFILESX86}\Microsoft Office\Office15" file="winproj.exe"/>
 		</install>
+		<!-- SharePoint -->
 		<autoSPInstaller order="9" folder="{BASE FOLDER}\SharePoint" configFile="{SCRIPT FOLDER}\Config\AutoSPInstallerInput.xml" downloadPreReqs="1">
 			<install order="1" name="SQL Client Libraries" folder="{SCRIPT FOLDER}\PreReqs" command="sqlncli.msi" args="/quiet" mode="PRE">
 				<installCheck type="file" folder="{SCRIPT FOLDER}" file="SQL Client Libraries.log"/>
