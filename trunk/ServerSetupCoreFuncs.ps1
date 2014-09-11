@@ -116,7 +116,7 @@ function Execute-ComputerSecurity {
 			if ((Get-Command "Set-ADAccountPassword" -errorAction SilentlyContinue) -ne $null)
 			{
 				$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
-				Set-ADAccountPassword -Identity $userName -Reset -NewPassword $passwordSecure
+				Set-ADAccountPassword -Identity $userName -Reset -NewPassword $passwordSecure -ErrorAction SilentlyContinue
 			}
 		}	
 	}
@@ -335,9 +335,24 @@ function Execute-InstallWindowsFeatures {
 function Execute-ConfigureDNS {
 	param([xml] $xmlSettings)
 
-	if ($xmlSettings.configuration.dns -eq $null) { return $true }
+	if ($xmlSettings.configuration.dns -ne $null) { 
+		Add-DNSEntries -XmlData $xmlSettings
+	}
 
-	return Add-DNSEntries -XmlData $xmlSettings
+	if ($xmlSettings.configuration.hostFile -ne $null) {
+		Write-LogMessage -level 1 -msg "Setting Hostfile"
+
+		if (-not $debug) {
+			$xmlSettings.configuration.hostFile.entry | % { 
+				$addr = $_.address
+				if ($addr -eq "{IP ADDRESS}") { $addr = "127.0.0.1" }
+				
+				Set-HostsEntry -IPAddress $addr -Hostname $_.hostName 
+			}
+		}
+	}
+
+	return $true
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -372,22 +387,6 @@ function Execute-InstallChocolatey {
 	
 	foreach ($package in $xmlSettings.configuration.chocolatey.package) {
 		Execute-InstallChocoPackage $package, $($xmlSettings.configuration.applications.baseFolder)
-
-		#Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
-		
-		#if ($package.installCheck -ne $null) {
-		#	$installCheckResult = Execute-InstallCheck $package.installCheck $($xmlSettings.configuration.applications.baseFolder)
-
-		#	if ($installCheckResult) {
-		#		Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-				
-		#		continue
-		#	}
-		#}
-		
-		#if (-Not $debug) {
-		#	cinst $($package.name)
-		#}
 	}
 	
 	return $true
@@ -426,23 +425,31 @@ function Execute-InstallChocoPackage {
 #-------------------------------------------------------------------------------------------------------------------
 function Execute-InstallApplications {
 	param([xml] $xmlSettings)
-	
+
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
-		$args = $([string]$install.args)
+		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
+			$install.AppendChild($xmlSettings.CreateElement("args"))
+		}
+
+		$paramNameValueDelim = " "
+		$paramFlagDelim = "/"
+	
 		switch ($($install.type)) {
 			"sql" {
-				if ($args -eq $null -or $args.Length -eq 0) {
-					$args = "/ConfigurationFile='{CONFIGFILE}' /SQLSVCPASSWORD='{DEFAULTPASSWORD}' /ASSVCPASSWORD='{DEFAULTPASSWORD}' /AGTSVCPASSWORD='{DEFAULTPASSWORD}' /ISSVCPASSWORD='{DEFAULTPASSWORD}' /RSSVCPASSWORD='{DEFAULTPASSWORD}' /SAPWD='{DEFAULTPASSWORD}'"
-				}
+				$paramNameValueDelim = "="
+			
+				$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "ConfigurationFile" "{CONFIGFILE}"))
 			}
 			"visualstudio" {
-				if ($args -eq $null -or $args.Length -eq 0) {
-					$args = "/adminfile {CONFIGFILE} /Passive /NoRestart"
+				if ($install.args.entry -eq $null) {
+					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "adminfile" "{CONFIGFILE}"))
+					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "Passive" ""))
+					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "NoRestart" ""))
 				}
 			}
 			"msoffice" {
-				if ($args -eq $null -or $args.Length -eq 0) {
-					$args = "/config {CONFIGFILE}"
+				if ($install.args.entry -eq $null) {
+					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "config" "{CONFIGFILE}"))
 				}
 			}
 			"ows" {
@@ -458,11 +465,28 @@ function Execute-InstallApplications {
 			}
 		}
 
+		[string]$args = ""
+		if ($install.args.entry -ne $null) {
+			$args = (($install.args.entry | % { if ($_.value -ne $null -and $_.value.Length -gt 0) { $paramFlagDelim + $_.name + $paramNameValueDelim + "'" + $_.value + "'" } else { $paramFlagDelim + $_.name } }) -join " ")
+		} else {
+			$args = $([string]$install.args)
+		}
+
+		if ($install.pwd -ne $null) {
+			$args = $args -replace "{PASSWORD}", $($install.pwd)
+		} else {
+			$args = $args -replace "{PASSWORD}", "{DEFAULTPASSWORD}"
+		}
+
 		if (($($install.type) -eq "choco") -and $install.package -ne $null) {
 			Execute-InstallChocoPackage $install.package
 		} else {
 			if ($args -ne $null -and $args.Length -gt 0) {
 				$args = $args -Replace "{DEFAULTPASSWORD}",$($xmlSettings.configuration.defaultPassword)
+			}
+
+			if ($install.args.entry -ne $null) {
+				$install.RemoveChild($install.args)
 			}
 
 			$install.SetAttribute("args", $args)
@@ -478,6 +502,18 @@ function Execute-InstallApplications {
 	Execute-AutoSPInstaller $xmlSettings
 		
 	return $true
+}
+
+function Create-ArgParameterElement([xml] $xmlDoc, [string] $name, [string] $value)
+{
+	$x = $xmlDoc.CreateElement("entry");
+	$x.SetAttribute("name", $name);
+
+	if ($value -ne $null -and $value.Length -gt 0) {
+		$x.SetAttribute("value", $value);
+	}
+
+	return $x
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -607,7 +643,11 @@ function Execute-InstallCheck {
 	if ($installCheck -ne $null) {
 		#Write-Verbose "installCheck.folder: $($installCheck.folder)"	
 		if ($installCheck.type -eq $null) { $installCheck.SetAttribute("type","file") }
-		if ($installCheck.folder -ne $null) { $installCheck.SetAttribute("folder", (Replace-TokensInString $($installCheck.folder) $baseFolder)) }
+		if ($installCheck.folder -ne $null) { 
+			$installCheck.SetAttribute("folder", (Replace-TokensInString $($installCheck.folder) $baseFolder)) 
+		} else {
+			$installCheck.SetAttribute("folder", "") 
+		}
 		
 		switch ($($installCheck.type)) {
 			"file" {
@@ -670,10 +710,10 @@ function Execute-Install {
 		
 	#Write-Verbose "BaseFolder: $baseFolder"
 	if ($baseFolder -ne $null) { $baseFolder = Replace-TokensInString $baseFolder }
-	#Write-Verbose "install.folder: $($install.folder)"
-	if ($install.folder -ne $null) { $install.SetAttribute("folder", (Replace-TokensInString $($install.folder) $baseFolder)) }
 	#Write-Verbose "install.iso: $($install.iso)"
 	if ($install.iso -ne $null) { $install.SetAttribute("iso", (Replace-TokensInString $($install.iso) $baseFolder $($install.folder))) }
+	#Write-Verbose "install.folder: $($install.folder)"
+	if ($install.folder -ne $null) { $install.SetAttribute("folder", (Replace-TokensInString $($install.folder) $baseFolder)) }
 	#Write-Verbose "install.configFile: $($install.configFile)"
 	if ($install.configFile -ne $null) { $install.SetAttribute("configFile", (Replace-TokensInString $($install.configFile) $baseFolder $($install.folder))) }
 	#Write-Verbose "install.args: $($install.args)"
@@ -695,7 +735,7 @@ function Execute-Install {
 		$mount = Mount-DiskImage -ImagePath $($install.iso) -PassThru
 		$mountPath = ($mount | Get-Volume).DriveLetter + ":"
 		Write-LogMessage -level 1 -msg "Mounted ISO To: $mountPath"
-		$install.folder = $mountPath
+		$install.SetAttribute("folder", $mountPath) 
 	}
 		
 	$networkDrive = $null
@@ -703,50 +743,54 @@ function Execute-Install {
 	{
 		Write-LogMessage -level 1 -msg "Network Path Detected. Mounting to local drive letter Q"
 		$networkDrive = New-PSDrive -Name Q -Root $($install.folder) -PSProvider FileSystem
-		
-		$install.folder = $networkDrive.Name + ":"
+
+		$install.SetAttribute("folder", $networkDrive.Name + ":") 
 	}
-				
+		
+	$skipInstall = $false
 	$path = Join-Path -Path $($install.folder) -ChildPath $($install.command)
 	if (!(Test-Path $path)) {
 		Write-LogMessage -level 0 -msg "Unable to find application: $path" 
 		
-		return $false
+		$skipInstall = $true
 	}
-	
-	$install.SetAttribute("args", ($($install.args) -Replace "'", """"))
-	Write-LogMessage -level 1 -msg "Executing: $path $($install.args)"
-	if (-Not $debug)
-	{
-		Try {
-			$stdOutLogFile = "{SCRIPT FOLDER}\" + $($install.name) + ".log"
-			$stdOutLogFile = Replace-TokensInString $stdOutLogFile $baseFolder
-			Write-LogMessage -level 1 -msg "Log File: $stdOutLogFile"
+
+	if (-Not $skipInstall) {	
+		$install.SetAttribute("args", ($($install.args) -Replace "'", """"))
+		Write-LogMessage -level 1 -msg "Executing: $path $($install.args)"
+		if (-Not $debug)
+		{
+			Try {
+				$stdOutLogFile = "{SCRIPT FOLDER}\" + $($install.name) + ".log"
+				$stdOutLogFile = Replace-TokensInString $stdOutLogFile $baseFolder
+				Write-LogMessage -level 1 -msg "Log File: $stdOutLogFile"
 			
-			$startTime = (Get-Date).ToString()
+				$startTime = (Get-Date).ToString()
 
-			if ($path -like "*.msi") {
-				$args = $($install.args)
-				if (-Not ($args -like "*/log")) { $args = $args + " /log ""$stdOutLogFile""" }
-				#Write-LogMessage -level 1 -msg "$path -> $args"
-				$process = Start-Process -FilePath $path -ArgumentList $args -PassThru
-			} else {
-				$process = Start-Process -FilePath $path -ArgumentList $($install.args) -PassThru -RedirectStandardOutput $stdOutLogFile
-				Write-LogMessage -level 1 -msg $stdOut
+				if ($path -like "*.msi") {
+					$args = $([string]$install.args)
+					if (-Not ($args -like "*/log")) { $args = $args + " /log ""$stdOutLogFile""" }
+					#Write-LogMessage -level 1 -msg "$path -> $args"
+					$process = Start-Process -FilePath $path -ArgumentList $args -PassThru
+				} else {
+					$process = Start-Process -FilePath $path -ArgumentList $($install.args) -PassThru -RedirectStandardOutput $stdOutLogFile
+					Write-LogMessage -level 1 -msg $stdOut
+				}
+
+				Show-Progress -process $process.Name -color Blue -interval 5
+				$delta,$null = (New-TimeSpan -Start $startTime -End (Get-Date)).ToString() -split "\."
+				Write-LogMessage -level 1 -msg "`tInstallation completed in $delta."
+				If (-not $?) {
+				}
+
+				#Write-LogMessage -level 2 -msg "`tProcess Exist Code: "$process.ExitCode 
+				Write-LogMessage -level 1 -msg "-----------------------------------------------------------------------------------------------"
 			}
-
-			Show-Progress -process $process.Name -color Blue -interval 5
-			$delta,$null = (New-TimeSpan -Start $startTime -End (Get-Date)).ToString() -split "\."
-			Write-LogMessage -level 1 -msg "`tInstallation completed in $delta."
-			If (-not $?) {
+			Catch {
+				Write-LogMessage -level 0 -msg $_.Exception.Message
 			}
-
-			#Write-LogMessage -level 2 -msg "`tProcess Exist Code: "$process.ExitCode 
-			Write-LogMessage -level 1 -msg "-----------------------------------------------------------------------------------------------"
 		}
-		Catch {
-			Write-LogMessage -level 0 -msg $_.Exception.Message
-		}
+	
 	}
 
 	#if (!(Test-Path $path)) {
@@ -771,6 +815,8 @@ function Execute-Install {
 		Dismount-DiskImage -ImagePath $mount.ImagePath
 	}
 	
+	if ($skipInstall) { return $false }
+
 	return $true
 }
 
