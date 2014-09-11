@@ -12,11 +12,12 @@ $SourceFiles = @{
 					"..\Samples\ServerSetup-Sample.xml" = "ServerSetup-Sample.xml";
 					"..\Samples\ServerSetup-SP2013.xml" = "ServerSetup-SP2013.xml";
 					"..\Samples\ServerSetup-Win8.xml" = "ServerSetup-Win8.xml";
-					"..\Samples\MSOffice2013.xml" = "";
-					"..\Samples\SQL2012-Developer.ini" = "";
-					"..\Samples\VS2013-Pro.xml" = "";
-					"..\Samples\AD-Sample.xml" = "";
-					"..\Samples\DNS-Sample.xml" = "";
+					"..\Samples\MSOffice2013.xml" = "Config\MSOffice2013.xml";
+					"..\Samples\SQL2012-Developer.ini" = "Config\SQL2012-Developer.ini";
+					"..\Samples\SQL2012-Developer-SSASTABULAR.ini" = "Config\SQL2012-Developer-SSASTABULAR.ini";
+					"..\Samples\VS2013-Pro.xml" = "Config\VS2013-Pro.xml";
+					"..\Samples\AD-Sample.xml" = "Config\AD-Sample.xml";
+					"..\Samples\DNS-Sample.xml" = "Config\DNS-Sample.xml";
 				}
 
 Write-Output "Destination Folder: $DestinationFolder"
@@ -48,9 +49,10 @@ foreach ($key in $SourceFiles.Keys) {
 
 	Write-Output "Copying: $key -> $dest"
 	if (Test-Path $source -pathtype container) {
-		Copy-Item -Path $source -Destination $dest -Recurse -Force   
+		Copy-Item -Path $source -Destination $dest -Recurse -Force | Out-Null
 	} else {
-		Copy-Item -Path $source -Destination $dest -Force  
+		New-Item -ItemType File -Path $dest -Force | Out-Null
+		Copy-Item -Path $source -Destination $dest -Force | Out-Null 
 	}
 	
 }
