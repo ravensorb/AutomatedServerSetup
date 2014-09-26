@@ -16,6 +16,7 @@ $SourceFiles = @{
 					"..\Samples\SQL2012-Developer.ini" = "Config\SQL2012-Developer.ini";
 					"..\Samples\SQL2012-Developer-SSASTABULAR.ini" = "Config\SQL2012-Developer-SSASTABULAR.ini";
 					"..\Samples\VS2013-Pro.xml" = "Config\VS2013-Pro.xml";
+					"..\Samples\AutoSPInstallerInput-Sample.xml" = "COnfig\AutoSPInstallerInput-Sample.xml";
 					"..\Samples\AD-Sample.xml" = "Config\AD-Sample.xml";
 					"..\Samples\DNS-Sample.xml" = "Config\DNS-Sample.xml";
 				}

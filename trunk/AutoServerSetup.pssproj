@@ -224,7 +224,6 @@
     <Compile Include="ServerSetupCoreFuncs.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Create-BuildPackage.ps1" />
     <Content Include="PSUtils\Add-ADObjects.ps1" />
     <Content Include="PSUtils\Add-DNSEntries.ps1" />
     <Content Include="PSUtils\Add-WUOfflineSync.ps1" />

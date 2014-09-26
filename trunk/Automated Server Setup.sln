@@ -22,6 +22,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{7046
 		..\Samples\WorkflowManager-SP2013.xml = ..\Samples\WorkflowManager-SP2013.xml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildTools", "BuildTools", "{4597D0FD-1228-493E-803F-B10D907E4A1A}"
+	ProjectSection(SolutionItems) = preProject
+		..\buildtools\buildscript.ps1 = ..\buildtools\buildscript.ps1
+		Create-BuildPackage.ps1 = Create-BuildPackage.ps1
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
 		SccNumberOfProjects = 2

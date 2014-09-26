@@ -428,7 +428,10 @@ function Execute-InstallApplications {
 
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
 		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
-			$install.AppendChild($xmlSettings.CreateElement("args"))
+			Write-Host "Args: $($install.args)"
+			$x = $xmlSettings.CreateElement("args");
+			$x.SetAttribute("type", "params"); # This is a HACK to get get Powershell to add an actual element instead of an attribute
+			$install.AppendChild($x)
 		}
 
 		$paramNameValueDelim = " "
