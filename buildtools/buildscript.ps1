@@ -28,21 +28,17 @@ Task Package-DownloadZip -depends Clean-Artifacts {
 	if(!(Test-Path "$baseDir\buildArtifacts")){
 		mkdir "$baseDir\buildArtifacts"
 	}
-	if(!(Test-Path "$baseDir\bin")){
-		mkdir "$baseDir\bin"
-	}
+	#if(!(Test-Path "$baseDir\bin")){
+	#	mkdir "$baseDir\bin"
+	#}
 	if (!(Test-Path $env:ProgramFiles\7-zip)){
 		cinst 7zip
 		cinst 7zip.commandline
 	}
 	Remove-Item "$env:temp\AutoServerSetup.zip" -Force -ErrorAction SilentlyContinue
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\trunk\ServerSetup.ps1" | out-Null
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\trunk\ServerSetup.xml" | out-Null
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\trunk\ServerSetupCoreFuncs.ps1" | out-Null
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip -r "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\trunk\PSUtils" | out-Null
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip -r "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\trunk\Tools" | out-Null
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\license.txt" | out-Null
-	Move-Item "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\bin\AutoServerSetup.$version.zip"
+	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\Build" | out-Null
+
+	#Move-Item "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\bin\AutoServerSetup.$version.zip"
 }
 
 Task Test -depends Package-DownloadZip {
