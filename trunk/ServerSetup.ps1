@@ -70,35 +70,43 @@ Import-Module "$workingDirectory\ServerSetupCoreFuncs.ps1" -Force
 
 $result = @{}
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Configuring Local Computer" -Foregroundcolor Green
 $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Network Configuration" -Foregroundcolor Green
 $result["network"] = (Execute-NetworkConfiguration $xmlSettings)
 if ($result["network"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
 $result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 1 }
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Renaming Local Computer" -Foregroundcolor Green
 $result["renamecomputer"] = (Execute-RenameComputer $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 2 }
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Configuring Windows Update" -Foregroundcolor Green
 $result["wupdateconfig"] = (Execute-ConfigureWindowsUpdate $xmlSettings)
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Executing Windows Update" -Foregroundcolor Green
 $result["wupdate"] = (Execute-WindowsUpdate $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 3 }
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Installing Windows Features" -Foregroundcolor Green
 $result["features"] = (Execute-InstallWindowsFeatures $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 4 }
 
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Installing/Configuring Active Directory" -Foregroundcolor Green
 $result["ad"] = (New-ADConfiguration -XmlData $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
@@ -108,12 +116,15 @@ if ($result["ad"] -eq "error") {
 	exit 
 } 
 
+#-------------------------------------------------------------------------------------------------------------------
 write-Host "Creating Accounts" -Foregroundcolor Green
-$result["accounts"] = Add-ADObjects -XmlData $xmlSettings
+$result["accounts"] = (Execute-CreateAccounts $xmlSettings)
 
+#-------------------------------------------------------------------------------------------------------------------
 write-Host "Creating DNS Records" -Foregroundcolor Green
 $result["dns"] = (Execute-ConfigureDNS $xmlSettings)
 
+#-------------------------------------------------------------------------------------------------------------------
 $promptResult = 0
 if ($xmlSettings.configuration.applications.prompt -ne $null -and $([int]$xmlSettings.configuration.applications.prompt) -eq 1) {
 	$promptResult = Show-YesNoQuestion -message "Do you want to install applications"
@@ -126,6 +137,7 @@ If ($promptResult -eq 0)
 	if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
 }
 
+#-------------------------------------------------------------------------------------------------------------------
 foreach($k in $result.keys) { Write-Host $k " -> " $result.$k }
 
 Stop-Transcript

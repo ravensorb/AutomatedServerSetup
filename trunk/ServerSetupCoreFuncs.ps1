@@ -111,12 +111,17 @@ function Execute-ComputerSecurity {
 
 		# Write-LogMessage -level 1 -msg "Settings '$userName' Password to: '$password'"
 		if (-Not $debug) {
-			Set-LocalUserPassword -user $userName -password $password
+			if ($([int]$record.create) -eq 1) {
+				Write-LogMessage -level 1 -msg "Creating Account: $userName"
+				Install-User -UserName $userName -Password $password -Description $_.description -FullName $_.fullName				
+			} else {		
+				Set-LocalUserPassword -user $userName -password $password
 
-			if ((Get-Command "Set-ADAccountPassword" -errorAction SilentlyContinue) -ne $null)
-			{
-				$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
-				Set-ADAccountPassword -Identity $userName -Reset -NewPassword $passwordSecure -ErrorAction SilentlyContinue
+				if (((Get-Command "Set-ADAccountPassword" -errorAction SilentlyContinue) -ne $null) -and ($password -ne $null))
+				{
+					$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
+					Set-ADAccountPassword -Identity $userName -Reset -NewPassword $passwordSecure -ErrorAction SilentlyContinue
+				}
 			}
 		}	
 	}
@@ -354,6 +359,19 @@ function Execute-ConfigureDNS {
 
 	return $true
 }
+
+#-------------------------------------------------------------------------------------------------------------------
+# Accounts
+#-------------------------------------------------------------------------------------------------------------------
+function Execute-CreateAccounts {
+	param([xml] $xmlSettings)
+
+	#Import-Module ServerManager
+	if ($xmlSettings.configuration.domain -eq $null) { return $true}
+
+	Add-ADObjects -XmlData $xmlSettings
+}
+
 
 #-------------------------------------------------------------------------------------------------------------------
 # Applications
