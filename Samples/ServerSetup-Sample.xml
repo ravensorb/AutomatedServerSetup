@@ -9,8 +9,9 @@
 		<wupdates enabled="3" update="1" />
 		<!-- security is used to set the passwords for a set of standard accounts (normally the Adminstrator and the current user) -->
 		<security>
-			<account name="{CURRENT USER}" password="{DEFAULT PASSWORD}" />
-			<account name="Administrator" password="{DEFAULT PASSWORD}" />
+			<account name="{CURRENT USER}" password="{DEFAULT PASSWORD}" description="" fullName="" create="0" />
+			<account name="Administrator" password="{DEFAULT PASSWORD}" description="" fullName="" create="0" />
+			
 		</security>
 	</computer>
 	<!-- defaultPassword specifies the default password that will be used for ALL accounts unless explicity defined -->
