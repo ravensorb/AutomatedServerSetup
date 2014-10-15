@@ -724,7 +724,7 @@ function Execute-Install {
 	}
 	
 	if ($install.folder -eq $null -and $install.iso -eq $null) {
-		Write-Error "Please specify either a folder path or and ISO image for your Visual Studio Installation"
+		Write-Error "Please specify either a folder path or and ISO image for your installation"
 		
 		return $false
 	}
@@ -753,6 +753,7 @@ function Execute-Install {
 	$mount = $null
 	if ($install.iso -ne $null) {
 		Write-LogMessage -level 1 -msg "ISO File Detected. Mounting Image now"
+		Write-LogMessage -level 2 -msg "ISO File: $($install.iso)"
 		$mount = Mount-DiskImage -ImagePath $($install.iso) -PassThru
 		$mountPath = ($mount | Get-Volume).DriveLetter + ":"
 		Write-LogMessage -level 1 -msg "Mounted ISO To: $mountPath"

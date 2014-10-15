@@ -61,7 +61,7 @@ if ($xmlSettings.configuration.workingDirectory -eq $null) {
 	$xmlSettings.configuration.SetAttribute("workingDirectory", $workingDirectory)
 }
 
-if ($xmlSettings.configuration.version -ne "1.0.0") {
+if ($xmlSettings.configuration.version -ne "1.0.1") {
 	Write-Host "Settings File Version number does not match expected version.  Possible incompatibility.  Please review the settings file and update if necessary." -ForegroundColor Red
 	exit
 }
