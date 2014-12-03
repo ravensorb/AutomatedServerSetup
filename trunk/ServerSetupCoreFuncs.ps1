@@ -19,13 +19,29 @@ function Execute-ConfigureLocalComputer {
 	}
 	
 	Execute-ComputerSecurity $xmlSettings
-		
-	if ($xmlSettings.configuration.computer.autoLogon -eq $null) { $xmlSettings.configuration.computer.SetAttribute("autoLogon", 0) }
 
-	if ($xmlSettings.configuration.computer.autoLogon -ne $null -and $xmlSettings.configuration.computer.autoLogon -eq 1 -and $xmlSettings.configuration.defaultPassword -ne $null) {
-		Write-LogMessage -level 1 -msg "Enabling Auto login"
-		if (-Not $debug) {
-			Enable-Autologon -password $($xmlSettings.configuration.defaultPassword) -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon)
+	if ($xmlSettings.configuration.computer.autoLogon -ne $null -and $xmlSettings.configuration.computer.autoLogon.enabled -eq 1) {
+		if (Test-AutoLogon -eq $true) {
+			Write-LogMessage -level 1 -msg "Autologon already enabled"
+		} else {
+			Write-LogMessage -level 1 -msg "Enabling Auto login"
+			if (-Not $debug) {
+				$autoLoginUserId = $($xmlSettings.configuration.computer.autoLogon.userId)
+				$autoLoginDomain = $($xmlSettings.configuration.computer.autoLogon.domain)
+				$autoLoginPassword = $($xmlSettings.configuration.computer.autoLogon.password)
+
+				if ($xmlSettings.configuration.computer.autoLogon.count -eq $null) { $xmlSettings.configuration.computer.autoLogon.SetAttribute("count", 1) }
+				
+				if ($autoLoginUserId -eq "{CURRENT USER}") { $autoLoginUserId = $env:username }
+				if ($autoLoginPassword -eq $null) { 
+					$autoLoginCredentials = (Get-Credential -UserName $autoLoginUserId -Message "Autologon").GetNetworkCredential()
+					$autoLoginUserId = $autoLoginCredentials.UserName
+					$autoLoginDomain = $autoLoginCredentials.Domain
+					$autoLoginPassword = $autoLoginCredentials.Password
+				}
+				
+				Enable-Autologon -domainName $autoLoginDomain -userName $autoLoginUserId -password $autoLoginPassword -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon.count)
+			}
 		}
 	}
 	
@@ -88,8 +104,70 @@ function Execute-ConfigureLocalComputer {
 			Update-Help -Force 
 		}
 	}
+
+	Execute-ComputerSQLAliases $xmlSettings
+	
+	Execute-ComputerServices $xmlSettings
 	
 	return $true
+}
+
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Execute-ComputerServices
+# Description:
+#	Handles settings for local services 
+#-------------------------------------------------------------------------------------------------------------------
+function Execute-ComputerServices {
+	param([xml] $xmlSettings)
+	
+	if ($xmlSettings.configuration.services -eq $null) { return $true }
+
+	Write-LogMessage -level 1 -msg "Checking Services"
+
+	$xmlSettings.configuration.computer.services.service | % { 
+		Write-LogMessage level 1 -msg "`t$($_.name)"
+		
+		$svc = (Get-WmiObject -Class Win32_Service -Filter "name='$($_.name)'")
+		$svc = Get-Service -Name $_.name -ErrorAction SilentlyContinue
+
+		if ($svc -ne $null) {
+			if ($svc.StartupMode -ne $_.startupMode) {
+				Write-LogMessage -level 1 -msg "`t`tSetting Startup Mode: $($_.startupMode)"
+				if (-Not $debug) {
+					Set-Service -Name $_.name -StartupType $_.startupMode
+				}
+			}
+
+			if ($svc.start -eq "1") {
+				if ($svc.State -eq "Stopped") {
+					Write-LogMessage -level 1 -msg "`t`tStarting Service"
+					if (-Not $debug) {
+						Start-Service -Name $_.name
+					}
+				}
+			}
+		}
+	}
+}
+
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Execute-ComputerSQLAliases
+# Description:
+#	Handles seetting up SQL Aliases 
+#-------------------------------------------------------------------------------------------------------------------
+function Execute-ComputerSQLAliases {
+	param([xml] $xmlSettings)
+	
+	if ($xmlSettings.configuration.sqlAliases -eq $null) { return $true }
+
+	Write-LogMessage -level 1 -msg "Creating SQL Aliases"
+
+	$xmlSettings.configuration.computer.sqlAliases.entry | % { 
+		Write-LogMessage level 1 -msg "`t$_.name"
+		if (-Not $debug) {
+			Add-SQLAlias -aliasName $_.name -SQLInstance $_.server -port $.port 
+		}
+	}
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -108,7 +186,7 @@ function Execute-ComputerSecurity {
 
 		if ($userName -eq "{CURRENT USER}") { $userName = $env:username }
 		if ($password -eq "{DEFAULT PASSWORD}" -or $password -eq $null) { $password = $([string]$xmlSettings.configuration.defaultPassword) }
-
+		
 		# Write-LogMessage -level 1 -msg "Settings '$userName' Password to: '$password'"
 		if (-Not $debug) {
 			if ($([int]$record.create) -eq 1) {
@@ -119,11 +197,30 @@ function Execute-ComputerSecurity {
 
 				if (((Get-Command "Set-ADAccountPassword" -errorAction SilentlyContinue) -ne $null) -and ($password -ne $null))
 				{
-					$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
+					if ($password -ne $null) { 
+						$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
+					} else { 
+						$passwordSecure = "" 
+					}
 					Set-ADAccountPassword -Identity $userName -Reset -NewPassword $passwordSecure -ErrorAction SilentlyContinue
 				}
 			}
 		}	
+	}
+
+	if ($xmlSettings.configuration.computer.security.group -ne $null) {
+		foreach ($record in $xmlSettings.configuration.computer.security.group) {
+			$groupName = $([string]$record.name)
+			 
+			Write-LogMessage -level 1 -msg "Adding Users to group: $groupName"
+			$record.account | % {
+				$userName= $([string]$_.name)
+				if ($userName -eq "{CURRENT USER}") { $userName = $env:username }
+
+				Write-LogMessage -level 1 -msg "`t$userName"
+				Add-GroupMember -Name $groupName -Memeber $userName
+			}
+		}
 	}
 }
 
@@ -139,10 +236,15 @@ function Execute-RenameComputer {
 
 	Write-LogMessage -level 1 -msg "Verifying computer name is correct."
 	if ($env:ComputerName -ne $($xmlSettings.configuration.computer.name)) {
-		$pwd = $($xmlSettings.configuration.defaultPassword)
-		$defaultPasswordSecure = ConvertTo-SecureString -String $pwd -AsPlainText -Force
+		$password = $($xmlSettings.configuration.defaultPassword)
+		
+		if ($password -ne $null) {
+			$passwordSecure = ConvertTo-SecureString -String $password -AsPlainText -Force
+		} else {
+			$passwordSecure = ""
+		}		
 	
-		$creds = New-Object System.Management.Automation.PSCredential ($env:username, $defaultPasswordSecure)
+		$creds = New-Object System.Management.Automation.PSCredential ($env:username, $passwordSecure)
 		
 		if (-Not $debug) {
 			Rename-Computer -NewName $($xmlSettings.configuration.computer.name) -LocalCredential $creds -Force
@@ -229,6 +331,10 @@ function Execute-NetworkConfiguration {
 	$networkAdapter = Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPEnabled=TRUE
 	if (($networkAdapter.DHCPEnabled -eq $true) -and ([int]$networkSettings.warnOnDHCP -eq 0)) {
 		Write-LogMessage -level 2 -msg "Network card is set to use DHCP -- Ideally it should be set to a static IP address"	
+	}
+
+	if ($networkSettings.disableLoopbackCheck -ne $null) {
+		New-ItemProperty HKLM:\System\CurrentControlSet\Control\Lsa -Name "DisableLoopbackCheck" -Value $($networkSettings.disableLoopbackCheck) -PropertyType dword
 	}
 
 	if (($networkSettings.ipAddress -ne $null) -and ($networkSettings.ipAddress -notcontains $([string]$networkSettings.ipAddress))) {
@@ -410,8 +516,13 @@ function Execute-InstallChocolatey {
 	return $true
 }
 
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Execute-InstallChocoPackage
+# Description:
+#	Handles installing any/all Chocolatey Packages that are requested with in the configuration file. 
+#-------------------------------------------------------------------------------------------------------------------
 function Execute-InstallChocoPackage {
-	param($packageName, [string] $baseFolder)
+	param($package, [string] $baseFolder)
 
 	Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
 	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
@@ -427,12 +538,68 @@ function Execute-InstallChocoPackage {
 	}
 		
 	if (-Not $debug) {
-		if ($package.source -ne $null) {
+		if ($package.source -ne $null -and $package.source -ne "webpi") {
 			cinst $($package.name) -source $($package.source)
+		} elseif ($package.source -ne $null -and $package.source -eq "webpi") {
+			cinst webpi $($package.name)
 		} else {
 			cinst $($package.name)
 		}
 	}
+}
+
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Execute-InstallWebPiPackage
+# Description:
+#	Handles installing any/all Web Platform Packages that are requested with in the configuration file. 
+#-------------------------------------------------------------------------------------------------------------------
+function Execute-InstallWebPiPackage {
+	param($package, [string] $baseFolder)
+
+	Write-LogMessage -level 1 -msg "`tInstalling WebPi Package: $($package.name)"
+	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
+		
+	if ($package.installCheck -ne $null) {
+		$installCheckResult = Execute-InstallCheck $package.installCheck $baseFolder
+
+		if ($installCheckResult) {
+			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+				
+			continue
+		}
+	}
+		
+	$logFile = "{SCRIPT FOLDER}\webpi_" + $($package.name) + ".log"
+	$logFile = Replace-TokensInString $logFile $baseFolder
+
+	$path = "C:\Program Files\Microsoft\Web Platform Installer\WebPiCmd.exe" 
+	$args = "/Install /Products:{PACKAGENAME} /Log:{LOGFILE} /SuppressReboot /AcceptEula"
+
+	$args = $args -Replace "{PACKAGENAME}", $($package.name)
+	$args = $args -Replace "{LOGFILE}", $logFile
+	Write-LogMessage -level 1 -msg "Executing: $path $args"
+
+	if (-Not $debug)
+	{
+		Try {
+			$startTime = (Get-Date).ToString()
+
+			$process = Start-Process -FilePath $path -ArgumentList $args -PassThru 
+
+			Show-Progress -process $process.Name -color Blue -interval 5
+			$delta,$null = (New-TimeSpan -Start $startTime -End (Get-Date)).ToString() -split "\."
+			Write-LogMessage -level 1 -msg "`tInstallation completed in $delta."
+			If (-not $?) {
+			}
+
+			#Write-LogMessage -level 2 -msg "`tProcess Exist Code: "$process.ExitCode 
+		}
+		Catch {
+			Write-LogMessage -level 0 -msg $_.Exception.Message
+		}
+	}
+		
+	return $true
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -446,7 +613,7 @@ function Execute-InstallApplications {
 
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
 		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
-			Write-Host "Args: $($install.args)"
+			#Write-Host "Args: $($install.args)"
 			$x = $xmlSettings.CreateElement("args");
 			$x.SetAttribute("type", "params"); # This is a HACK to get get Powershell to add an actual element instead of an attribute
 			$install.AppendChild($x)
@@ -458,10 +625,22 @@ function Execute-InstallApplications {
 		switch ($($install.type)) {
 			"sql" {
 				$paramNameValueDelim = "="
+
+				if (Test-Path $($install.configFile) -eq $false) {
+					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
+					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					continue
+				}
 			
 				$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "ConfigurationFile" "{CONFIGFILE}"))
 			}
 			"visualstudio" {
+				if (Test-Path $($install.configFile) -eq $false) {
+					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
+					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					continue
+				}
+
 				if ($install.args.entry -eq $null) {
 					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "adminfile" "{CONFIGFILE}"))
 					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "Passive" ""))
@@ -469,6 +648,12 @@ function Execute-InstallApplications {
 				}
 			}
 			"msoffice" {
+				if (Test-Path $($install.configFile) -eq $false) {
+					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
+					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					continue
+				}
+
 				if ($install.args.entry -eq $null) {
 					$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "config" "{CONFIGFILE}"))
 				}
@@ -479,7 +664,12 @@ function Execute-InstallApplications {
 			}
 			"choco" {
 				if ($install.package -eq $null) {
-					Write-LogMessage -level 1 -msg "`tSkipping Choco Package as it was not defined"
+					Write-LogMessage -level 1 -msg "`tSkipping Chocolatey Package as it was not defined"
+				}	
+			}
+			"wepbi" {
+				if ($install.package -eq $null) {
+					Write-LogMessage -level 1 -msg "`tSkipping WebPi Package as it was not defined"
 				}	
 			}
 			"generic" { 
@@ -496,14 +686,16 @@ function Execute-InstallApplications {
 		if ($install.pwd -ne $null) {
 			$args = $args -replace "{PASSWORD}", $($install.pwd)
 		} else {
-			$args = $args -replace "{PASSWORD}", "{DEFAULTPASSWORD}"
+			$args = $args -replace "{PASSWORD}", "{DEFAULT PASSWORD}"
 		}
 
 		if (($($install.type) -eq "choco") -and $install.package -ne $null) {
 			Execute-InstallChocoPackage $install.package
+		} elseif (($($install.type) -eq "webpi") -and $install.package -ne $null) {
+			Execute-InstallWebPiPackage $install.package
 		} else {
 			if ($args -ne $null -and $args.Length -gt 0) {
-				$args = $args -Replace "{DEFAULTPASSWORD}",$($xmlSettings.configuration.defaultPassword)
+				$args = $args -Replace "{DEFAULT PASSWORD}",$($xmlSettings.configuration.defaultPassword)
 			}
 
 			if ($install.args.entry -ne $null) {
@@ -516,7 +708,6 @@ function Execute-InstallApplications {
 		}
 		
 		if ((Get-PendingReboot).RebootPending -eq $true) { Write-LogMessage -level 1 -msg "Reboot Required before we can continue"; return $true }
-
 	}
 	
 	# SharePoint should be installed AFTER everything else
@@ -656,7 +847,8 @@ function Execute-AutoSPInstaller {
 #-------------------------------------------------------------------------------------------------------------------
 # Function: Execute-InstallCheck
 # Description:
-#	Handles the check to see if an application is already installed
+#	Handles the check to see if an application is already installed 
+#   Note: $true indicates that the install check succeeded and that the install should be skipped
 #-------------------------------------------------------------------------------------------------------------------
 function Execute-InstallCheck {
 	param($installCheck, [string] $baseFolder)
@@ -664,6 +856,7 @@ function Execute-InstallCheck {
 	if ($installCheck -ne $null) {
 		#Write-Verbose "installCheck.folder: $($installCheck.folder)"	
 		if ($installCheck.type -eq $null) { $installCheck.SetAttribute("type","file") }
+		if ($installCheck.match -eq $null) { $installCheck.SetAttribute("match","eq") }
 		if ($installCheck.folder -ne $null) { 
 			$installCheck.SetAttribute("folder", (Replace-TokensInString $($installCheck.folder) $baseFolder)) 
 		} else {
@@ -680,8 +873,20 @@ function Execute-InstallCheck {
 				}
 			
 				$installCheckPath = Join-Path  -Path $($installCheck.folder) -ChildPath $($installCheck.file)
+				Write-LogMessage -level 1 -msg "Checking for existance of file" 
 				if (Test-Path $installCheckPath) {
 					return $true
+				}
+
+				if ($installCheck.version -ne $null) {
+					Write-LogMessage -level 1 -msg "Checking version of file" 
+					$itemVersion = (Get-Item $installCheckPath).Version
+
+					$versionCompareResult = Compare-Version $itemVersion, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+
+					Write-Verbose "Version Compare returned $versionCompareResult"
+					if ($versionCompareResult -eq $($installCheck.match)) { return $true }
+
 				}
 			}
 			"registry" {
@@ -690,11 +895,19 @@ function Execute-InstallCheck {
 				return ((Get-Command $($installCheck.commandName) -ErrorAction SilentlyContinue) -ne $null)
 			}
 			"posversion" {
-				[int] $posVersion = [int] $PSVersionTable.PSVersion.ToString()
-				[int] $installCheckVersion = [int]$($installCheck.version)
+				$psVer = $PSVersionTable.PSVersion
+				$versionCompareResult = Compare-Version $psVer, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
 
-				Write-Verbose "Checking PowerShell Version meets min requirements. [Running: $posVersion] [Requested: $installCheckVersion]"
-				return ($posVersion -ge $installCheckVersion)
+				Write-Verbose "Version Compare returned $versionCompareResult"
+				if ($versionCompareResult -eq $($installCheck.match)) { return $true }
+			}
+			"osversion" {
+				$osVer = [Environment]::OSVersion
+				if ($installCheck.platform -ne $null -and $($installCheck.platform) -ne $osVer.Platform) { return $true }
+				$versionCompareResult = Compare-Version $osVer, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+
+				Write-Verbose "Version Compare returned $versionCompareResult"
+				if ($versionCompareResult -eq $($installCheck.match)) { return $true }
 			}
 		}
 	}
@@ -845,6 +1058,32 @@ function Execute-Install {
 #-------------------------------------------------------------------------------------------------------------------
 # Utilities
 #-------------------------------------------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Compare-Version
+# Description:
+#	Compares the major, minor, and build numbers with a version object and returns "gt", "lt", or "eq"
+#-------------------------------------------------------------------------------------------------------------------
+function Compare-Version {
+	param([Version] $version, [int] $versionMajor, [int] $versionMinor, [int] $versionBuild)
+
+	Write-Verbose "Comparing $version to [Major: $versionMajor] [Minor: $versionMinor] [Build: $versionBuild]"
+
+	if ($version.Major -gt $versionMajor) { return "gt" }
+	if ($version.Major -eq $versionMajor) {
+		if ($version.Minor -gt $versionMinor) { return "gt" }
+		if ($version.Minor -eq $versionMinor) {
+			if ($version.Build -gt $versionBuild) { return "gt" }
+			if ($version.Build -lt $versionBuild) { return "lt" }
+
+			return "eq"
+		} else {
+			return "lt"
+		} 
+	} else {
+		return "lt"
+	}
+}
 
 #-------------------------------------------------------------------------------------------------------------------
 # Function: Add-PinToTaskbar
