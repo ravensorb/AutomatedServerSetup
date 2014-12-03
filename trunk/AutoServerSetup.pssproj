@@ -241,6 +241,7 @@
     <Content Include="PSUtils\Invoke-Ternary.ps1" />
     <Content Include="PSUtils\Invoke-WUInstall.ps1" />
     <Content Include="PSUtils\New-ADConfiguration.ps1" />
+    <Content Include="PSUtils\Add-SQLAlias.ps1" />
     <Content Include="PSUtils\PSUtils.Format.ps1xml" />
     <Content Include="PSUtils\PSUtils.psd1" />
     <Content Include="PSUtils\PSUtils.psm1" />
@@ -257,9 +258,11 @@
     <Content Include="PSUtils\Test-ADUser.ps1" />
     <Content Include="PSUtils\Test-ADGroup.ps1" />
     <Content Include="PSUtils\Test-ADOrganizationUnit.ps1" />
+    <Content Include="PSUtils\Test-AutoLogon.ps1" />
     <Content Include="PSUtils\Test-IsAdmin.ps1" />
     <Content Include="PSUtils\Test-IsProcessElevated.ps1" />
     <Content Include="PSUtils\Test-IsUacEnabled.ps1" />
+    <Content Include="PSUtils\Test-Script.ps1" />
     <Content Include="PSUtils\Update-WUModule.ps1" />
     <Content Include="PSUtils\User-RunAs.ps1" />
   </ItemGroup>

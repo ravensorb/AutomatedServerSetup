@@ -106,7 +106,7 @@ Function Add-DNSEntries
 		$xmlSettings.configuration.SetAttribute("workingDirectory", $workingDirectory)
 	}
 
-	if ($xmlSettings.configuration.version -ne "1.0.0") {
+	if ($xmlSettings.configuration.version -ne "1.0.1") {
 		Write-Warning "Settings File Version number does not match expected version.  Possible incompatibility.  Please review the settings file and update if necessary." -ForegroundColor Red
 		Return
 	}
