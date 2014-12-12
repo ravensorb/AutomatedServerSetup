@@ -626,7 +626,7 @@ function Execute-InstallApplications {
 			"sql" {
 				$paramNameValueDelim = "="
 
-				if (Test-Path $($install.configFile) -eq $false) {
+				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
 					continue
@@ -635,7 +635,7 @@ function Execute-InstallApplications {
 				$install.args.AppendChild((Create-ArgParameterElement $xmlSettings "ConfigurationFile" "{CONFIGFILE}"))
 			}
 			"visualstudio" {
-				if (Test-Path $($install.configFile) -eq $false) {
+				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
 					continue
@@ -648,7 +648,7 @@ function Execute-InstallApplications {
 				}
 			}
 			"msoffice" {
-				if (Test-Path $($install.configFile) -eq $false) {
+				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
 					continue
