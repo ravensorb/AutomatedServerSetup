@@ -218,7 +218,7 @@ function Execute-ComputerSecurity {
 				if ($userName -eq "{CURRENT USER}") { $userName = $env:username }
 
 				Write-LogMessage -level 1 -msg "`t$userName"
-				Add-GroupMember -Name $groupName -Memeber $userName
+				Add-GroupMember -Name $groupName -Member $userName
 			}
 		}
 	}
@@ -909,7 +909,7 @@ function Execute-InstallCheck {
 			"osversion" {
 				$osVer = [Environment]::OSVersion
 				if ($installCheck.platform -ne $null -and $($installCheck.platform) -ne $osVer.Platform) { return $true }
-				$versionCompareResult = Compare-Version $osVer, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+				$versionCompareResult = Compare-Version $osVer.Version, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
 
 				Write-Verbose "Version Compare returned $versionCompareResult"
 				if ($versionCompareResult -eq $($installCheck.match)) { return $true }
