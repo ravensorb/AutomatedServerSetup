@@ -880,13 +880,18 @@ function Execute-InstallCheck {
 
 				if ($installCheck.version -ne $null) {
 					Write-LogMessage -level 1 -msg "Checking version of file" 
-					$itemVersion = (Get-Item $installCheckPath).Version
+					$item = Get-Item $installCheckPath -ErrorAction SilentlyContinue
+					if ($item -ne $null)
+					{
+						$itemVersion = $item.Version
 
-					$versionCompareResult = Compare-Version $itemVersion, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+						$versionCompareResult = Compare-Version $itemVersion, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
 
-					Write-Verbose "Version Compare returned $versionCompareResult"
-					if ($versionCompareResult -eq $($installCheck.match)) { return $true }
-
+						Write-Verbose "Version Compare returned $versionCompareResult"
+						if ($versionCompareResult -eq $($installCheck.match)) { return $true }
+					} else {
+						Write-LogMessage -level 2 -msg "`tNot Found"
+					}
 				}
 			}
 			"registry" {
@@ -1066,6 +1071,8 @@ function Execute-Install {
 #-------------------------------------------------------------------------------------------------------------------
 function Compare-Version {
 	param([Version] $version, [int] $versionMajor, [int] $versionMinor, [int] $versionBuild)
+
+	if ($version -eq $null) { return "ne" }
 
 	Write-Verbose "Comparing $version to [Major: $versionMajor] [Minor: $versionMinor] [Build: $versionBuild]"
 
