@@ -8,7 +8,7 @@ properties {
 		$changeset=(git log -1 $($versionTag + '..') --pretty=format:%H)
 	}
 	else {
-		$version="1.1.1"
+		$version="1.1.2"
 	}
 	$nugetExe = "$env:ChocolateyInstall\ChocolateyInstall\nuget"
 	$ftpHost = "waws-prod-bay-001.ftp.azurewebsites.windows.net"
@@ -25,18 +25,26 @@ Task Package-DownloadZip -depends Clean-Artifacts {
 	if (Test-Path "$basedir\bin\AutoServerSetup.zip") {
 	  Remove-Item "$baseDir\bin\AutoServerSetup.zip" -Recurse -Force
 	}
+
+	if (Test-Path "$basedir\buildartifacts\AutoServerSetup.zip") {
+	  Remove-Item "$baseDir\buildartifacts\AutoServerSetup.zip" -Recurse -Force
+	}
+
 	if(!(Test-Path "$baseDir\buildArtifacts")){
 		mkdir "$baseDir\buildArtifacts"
 	}
+
 	#if(!(Test-Path "$baseDir\bin")){
 	#	mkdir "$baseDir\bin"
 	#}
+	
 	if (!(Test-Path $env:ProgramFiles\7-zip)){
 		cinst 7zip
 		cinst 7zip.commandline
 	}
+	
 	Remove-Item "$env:temp\AutoServerSetup.zip" -Force -ErrorAction SilentlyContinue
-	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\Build" | out-Null
+	."$env:ProgramFiles\7-zip\7z.exe" a -tzip "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\Build\*" -r | out-Null
 
 	#Move-Item "$basedir\buildartifacts\AutoServerSetup.zip" "$basedir\bin\AutoServerSetup.$version.zip"
 }
@@ -76,10 +84,10 @@ Task Clean-Artifacts {
 	}
 	mkdir "$baseDir\buildArtifacts"
 
-	if (Test-Path "$baseDir\bin") {
-	  Remove-Item "$baseDir\bin" -Recurse -Force
-	}
-	mkdir "$baseDir\bin"
+	#if (Test-Path "$baseDir\bin") {
+	#  Remove-Item "$baseDir\bin" -Recurse -Force
+	#}
+	#mkdir "$baseDir\bin"
 }
 
 Task Push-Codeplex {

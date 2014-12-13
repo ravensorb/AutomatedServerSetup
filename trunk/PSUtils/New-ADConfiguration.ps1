@@ -270,10 +270,11 @@ function Execute-ActiveDirectoryInstallation {
 		} else { #if ($osDetails.Version -match "6.2*") {
 			if ($adFeature.PostConfigurationNeeded) {
 				Write-LogMessage -level 1 -msg "Running Pre-checks for AD Forest Installation"
-				$testADForestInstallation = Test-ADDSForestInstallation -DomainName $([string]$xmlSettings.configuration.domain.name) -SafeModeAdministratorPassword $safeModePassword
+				$testADForestInstallation = Test-ADDSForestInstallation -DomainName $([string]$xmlSettings.configuration.domain.name) -SafeModeAdministratorPassword $safeModePassword -ErrorAction SilentlyContinue
 				if ($testADForestInstallation.Status -ne "Success") {
 					Write-Error "AD Forest Installation Test Failed"
-					$testADForestInstallation | fl
+					Write-Host $testADForestInstallation
+					#$testADForestInstallation | fl
 			
 					return "error"
 				}

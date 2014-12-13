@@ -71,6 +71,10 @@ Import-Module "$workingDirectory\ServerSetupCoreFuncs.ps1" -Force
 $result = @{}
 
 #-------------------------------------------------------------------------------------------------------------------
+Write-Host "Initializing Script" -Foregroundcolor Green
+$result["initscript"] = (Execute-InitializeScript $xmlSettings)
+
+#-------------------------------------------------------------------------------------------------------------------
 Write-Host "Configuring Local Computer" -Foregroundcolor Green
 $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
 
@@ -78,11 +82,6 @@ $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
 Write-Host "Network Configuration" -Foregroundcolor Green
 $result["network"] = (Execute-NetworkConfiguration $xmlSettings)
 if ($result["network"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
-
-#-------------------------------------------------------------------------------------------------------------------
-Write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
-$result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
-if ((Get-PendingReboot).RebootPending -eq $true) { Restart 1 }
 
 #-------------------------------------------------------------------------------------------------------------------
 Write-Host "Renaming Local Computer" -Foregroundcolor Green
@@ -105,6 +104,11 @@ Write-Host "Installing Windows Features" -Foregroundcolor Green
 $result["features"] = (Execute-InstallWindowsFeatures $xmlSettings)
 Write-Host "Checking to see if reboot is required" -Foregroundcolor Green
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 4 }
+
+#-------------------------------------------------------------------------------------------------------------------
+Write-Host "Setting up Chocolatey and related packages" -Foregroundcolor Green
+$result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
+if ((Get-PendingReboot).RebootPending -eq $true) { Restart 1 }
 
 #-------------------------------------------------------------------------------------------------------------------
 Write-Host "Installing/Configuring Active Directory" -Foregroundcolor Green

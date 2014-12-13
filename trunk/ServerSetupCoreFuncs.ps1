@@ -3,6 +3,26 @@
 #-------------------------------------------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------------------------------------------
+# Function: Execute-InitializeScript
+# Description:
+#	Handles setting up the script, initializing variables, etc
+# Function: Execute-InitializeScript
+#-------------------------------------------------------------------------------------------------------------------
+function Execute-InitializeScript {
+	param([xml] $xmlSettings)
+
+	if ($xmlSettings.configuration.defaultPassword -eq "*") {
+		#TODO Need to handle storing this between reboots
+		#Write-LogMessage -level 1 -msg "Prompting for new default password"
+		#$defaultPasswordCredentials = (Get-Credential -UserName "Default Password" -Message "Set Default Password").GetNetworkCredential()
+		#$defaultPassword = $defaultPasswordCredentials.Password
+		#$xmlSettings.configuration.SetAttribute("defaultPassword", $defaultPassword)
+	}
+
+	return $true
+}
+
+#-------------------------------------------------------------------------------------------------------------------
 # Function: Execute-ConfigureLocalComputer
 # Description:
 #	Handles setting up the local computer (setting passwords, enabling auto-login, windows update, setting up RDP, etc)
@@ -30,7 +50,7 @@ function Execute-ConfigureLocalComputer {
 				$autoLoginDomain = $($xmlSettings.configuration.computer.autoLogon.domain)
 				$autoLoginPassword = $($xmlSettings.configuration.computer.autoLogon.password)
 
-				if ($xmlSettings.configuration.computer.autoLogon.count -eq $null) { $xmlSettings.configuration.computer.autoLogon.SetAttribute("count", 1) }
+				if ($xmlSettings.configuration.computer.autoLogon.count -eq $null) { $xmlSettings.configuration.computer.autoLogon.SetAttribute("count", 999) }
 				
 				if ($autoLoginUserId -eq "{CURRENT USER}") { $autoLoginUserId = $env:username }
 				if ($autoLoginPassword -eq $null) { 
@@ -186,7 +206,11 @@ function Execute-ComputerSecurity {
 
 		if ($userName -eq "{CURRENT USER}") { $userName = $env:username }
 		if ($password -eq "{DEFAULT PASSWORD}" -or $password -eq $null) { $password = $([string]$xmlSettings.configuration.defaultPassword) }
-		
+		if ($password -eq "*") {
+			$userCredentials = (Get-Credential -UserName $userName -Message "Set Password for account").GetNetworkCredential()
+			$password = $userCredentials.Password
+		}		
+
 		# Write-LogMessage -level 1 -msg "Settings '$userName' Password to: '$password'"
 		if (-Not $debug) {
 			if ($([int]$record.create) -eq 1) {
@@ -857,7 +881,7 @@ function Execute-AutoSPInstaller {
 function Execute-InstallCheck {
 	param($installCheck, [string] $baseFolder)
 	
-	Write-LogMessage -level 2 -msg "`tChecking installation. " -noNewLine $true
+	Write-LogMessage -level 2 -msg "`t`tChecking installation. " -noNewLine $true
 	if ($installCheck -eq $null) { return $false}
 
 	#Write-Verbose "installCheck.folder: $($installCheck.folder)"	

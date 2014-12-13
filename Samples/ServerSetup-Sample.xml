@@ -1,6 +1,6 @@
 <configuration mode="DEV" version="1.0.1">
 	<!-- The computer section is used to define how the computer will be configured for items like time zone, enabling remote desktop, setting passwords for key users, windows updates, etc. -->
-	<computer name="SPDEV" rename="1" remoteDesktop="1" timeZone="Eastern Standard Time" updateHelp="0">
+	<computer name="SampleServerDEV" rename="1" remoteDesktop="1" timeZone="Eastern Standard Time" updateHelp="0">
 		<!-- Enable Autologon to help with the multple reboots required for a server setup -->
 		<autoLogon enabled="1" userId="{CURRENT USER}" />
 
