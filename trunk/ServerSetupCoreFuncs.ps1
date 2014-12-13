@@ -334,7 +334,9 @@ function Execute-NetworkConfiguration {
 	}
 
 	if ($networkSettings.disableLoopbackCheck -ne $null) {
-		New-ItemProperty HKLM:\System\CurrentControlSet\Control\Lsa -Name "DisableLoopbackCheck" -Value $($networkSettings.disableLoopbackCheck) -PropertyType dword
+		if ((Test-RegistryKeyValue -Path 'HKLM:\System\CurrentControlSet\Control\Lsa' -Name 'DisableLoopbackCheck') -eq $false) {
+			New-ItemProperty HKLM:\System\CurrentControlSet\Control\Lsa -Name "DisableLoopbackCheck" -Value $($networkSettings.disableLoopbackCheck) -PropertyType dword
+		}
 	}
 
 	if (($networkSettings.ipAddress -ne $null) -and ($networkSettings.ipAddress -notcontains $([string]$networkSettings.ipAddress))) {
@@ -528,12 +530,13 @@ function Execute-InstallChocoPackage {
 	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
 		
 	if ($package.installCheck -ne $null) {
-		$installCheckResult = Execute-InstallCheck $package.installCheck $baseFolder
-
-		if ($installCheckResult) {
-			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-				
-			continue
+		$package.installCheck | % {
+			$installCheckResult = Execute-InstallCheck -installCheck $_ -baseFolder $baseFolder
+			if ($installCheckResult) {
+				Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+		
+				return $true
+			}
 		}
 	}
 		
@@ -560,12 +563,13 @@ function Execute-InstallWebPiPackage {
 	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
 		
 	if ($package.installCheck -ne $null) {
-		$installCheckResult = Execute-InstallCheck $package.installCheck $baseFolder
-
-		if ($installCheckResult) {
-			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-				
-			continue
+		$package.installCheck | % {
+			$installCheckResult = Execute-InstallCheck $_ $baseFolder
+			if ($installCheckResult) {
+				Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+		
+				return $true
+			}
 		}
 	}
 		
@@ -853,71 +857,78 @@ function Execute-AutoSPInstaller {
 function Execute-InstallCheck {
 	param($installCheck, [string] $baseFolder)
 	
-	if ($installCheck -ne $null) {
-		#Write-Verbose "installCheck.folder: $($installCheck.folder)"	
-		if ($installCheck.type -eq $null) { $installCheck.SetAttribute("type","file") }
-		if ($installCheck.match -eq $null) { $installCheck.SetAttribute("match","eq") }
-		if ($installCheck.folder -ne $null) { 
-			$installCheck.SetAttribute("folder", (Replace-TokensInString $($installCheck.folder) $baseFolder)) 
-		} else {
-			$installCheck.SetAttribute("folder", "") 
-		}
+	Write-LogMessage -level 2 -msg "`tChecking installation. " -noNewLine $true
+	if ($installCheck -eq $null) { return $false}
+
+	#Write-Verbose "installCheck.folder: $($installCheck.folder)"	
+	if ($installCheck.type -eq $null) { $installCheck.SetAttribute("type","file") }
+	if ($installCheck.match -eq $null) { $installCheck.SetAttribute("match","eq") }
+	#if ($installCheck.versionMajor -eq $null) { $installCheck.SetAttribute("versionMajor","0") }
+	#if ($installCheck.versionMinor -eq $null) { $installCheck.SetAttribute("versionMinor","0") }
+	#if ($installCheck.versionBuild -eq $null) { $installCheck.SetAttribute("versionBuild","0") }
+
+	if ($installCheck.folder -ne $null) { 
+		$installCheck.SetAttribute("folder", (Replace-TokensInString $($installCheck.folder) $baseFolder)) 
+	} else {
+		$installCheck.SetAttribute("folder", "") 
+	}
 		
-		switch ($($installCheck.type)) {
-			"file" {
-				if ($installCheck.folder -eq $null -or ($($installCheck.folder).length -eq 0) -or $installCheck.file -eq $null -or ($($installCheck.file).length -eq 0)) { 
-					Write-LogMessage -level 0 -msg "Install Check requires both folder and file to be specified" 
+	switch ($($installCheck.type)) {
+		"file" {
+			if ($installCheck.folder -eq $null -or ($($installCheck.folder).length -eq 0) -or $installCheck.file -eq $null -or ($($installCheck.file).length -eq 0)) { 
+				Write-LogMessage -level 0 -msg "Install Check requires both folder and file to be specified." 
 					
-					# Return TRUE here to "fake" that it is already installed
-					return $true
-				}
+				# Return TRUE here to "fake" that it is already installed
+				return $true
+			}
 			
-				$installCheckPath = Join-Path  -Path $($installCheck.folder) -ChildPath $($installCheck.file)
-				Write-LogMessage -level 1 -msg "Checking for existance of file" 
-				if (Test-Path $installCheckPath) {
-					return $true
+			$installCheckPath = Join-Path  -Path $($installCheck.folder) -ChildPath $($installCheck.file)
+			Write-LogMessage -level 2 -msg "Checking for existance of file. " 
+			if (Test-Path $installCheckPath) {
+				return $true
+			}
+
+			if ($installCheck.version -ne $null) {
+				Write-LogMessage -level 2 -msg "Checking version of file. " 
+				$item = Get-Item $installCheckPath -ErrorAction SilentlyContinue
+				if ($item -ne $null)
+				{
+					[Version] $itemVersion = $item.Version
+
+					$versionCompareResult = Compare-Version $itemVersion $($installCheck.versionMajor) $($installCheck.versionMinor) $($installCheck.versionBuild)
+
+					Write-Verbose "Version Compare returned $versionCompareResult"
+					if ($versionCompareResult -eq $($installCheck.match)) { return $true }
+				} else {
+					Write-LogMessage -level 3 -msg "`tNot Found"
 				}
-
-				if ($installCheck.version -ne $null) {
-					Write-LogMessage -level 1 -msg "Checking version of file" 
-					$item = Get-Item $installCheckPath -ErrorAction SilentlyContinue
-					if ($item -ne $null)
-					{
-						$itemVersion = $item.Version
-
-						$versionCompareResult = Compare-Version $itemVersion, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
-
-						Write-Verbose "Version Compare returned $versionCompareResult"
-						if ($versionCompareResult -eq $($installCheck.match)) { return $true }
-					} else {
-						Write-LogMessage -level 2 -msg "`tNot Found"
-					}
-				}
 			}
-			"registry" {
-			}
-			"poscommand" {
-				return ((Get-Command $($installCheck.commandName) -ErrorAction SilentlyContinue) -ne $null)
-			}
-			"posversion" {
-				$psVer = $PSVersionTable.PSVersion
-				$versionCompareResult = Compare-Version $psVer, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+		}
+		"registry" {
+		}
+		"poscommand" {
+			Write-LogMessage -level 2 -msg "Checking Existance of PowerShell Command $($installCheck.commandName)."
+			return ((Get-Command $($installCheck.commandName) -ErrorAction SilentlyContinue) -ne $null)
+		}
+		"posversion" {
+			Write-LogMessage -level 2 -msg "Checking PowerShell Version."
+			$psVer = $PSVersionTable.PSVersion
+			$versionCompareResult = Compare-Version $psVer $($installCheck.versionMajor) $($installCheck.versionMinor) $($installCheck.versionBuild)
 
-				Write-Verbose "Version Compare returned $versionCompareResult"
-				if ($versionCompareResult -eq $($installCheck.match)) { return $true }
-			}
-			"osversion" {
-				$osVer = [Environment]::OSVersion
-				if ($installCheck.platform -ne $null -and $($installCheck.platform) -ne $osVer.Platform) { return $true }
-				$versionCompareResult = Compare-Version $osVer.Version, $($installCheck.versionMajor), $($installCheck.versionMinor), $($installCheck.versionBuild)
+			Write-Verbose "Version Compare returned $versionCompareResult"
+			if ($versionCompareResult -eq $($installCheck.match)) { return $true }
+		}
+		"osversion" {
+			Write-LogMessage -level 2 -msg "Checking OS Version."
+			$osDetails = [Environment]::OSVersion
+			[Version] $osVer = $osDetails.Version
+			if ($installCheck.platform -ne $null -and $($installCheck.platform) -ne $osDetails.Platform) { return $true }
+			$versionCompareResult = Compare-Version -version $osVer -versionMajor $installCheck.versionMajor -versionMinor $installCheck.versionMinor -versionBuild $installCheck.versionBuild
 
-				Write-Verbose "Version Compare returned $versionCompareResult"
-				if ($versionCompareResult -eq $($installCheck.match)) { return $true }
-			}
+			Write-Verbose "Version Compare returned $versionCompareResult"
+			if ($versionCompareResult -eq $($installCheck.match)) { return $true }
 		}
 	}
-	
-	return $false
 }
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -961,13 +972,15 @@ function Execute-Install {
 		$install.SetAttribute("args", ($($install.args) -Replace "{CONFIGFILE}",$($install.configFile)))
 	}
 		
-	$installCheckResult = Execute-InstallCheck $install.installCheck $baseFolder
-	if ($installCheckResult) {
-		Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
+	$install.installCheck | % {
+		$installCheckResult = Execute-InstallCheck $_ $baseFolder
+		if ($installCheckResult) {
+			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
 		
-		return $true
+			return $true
+		}
 	}
-		
+			
 	$mount = $null
 	if ($install.iso -ne $null) {
 		Write-LogMessage -level 1 -msg "ISO File Detected. Mounting Image now"
