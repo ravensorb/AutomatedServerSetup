@@ -640,6 +640,7 @@ function Execute-InstallApplications {
 	param([xml] $xmlSettings)
 
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
+		[bool] $skipInstall = $false
 		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
 			#Write-Host "Args: $($install.args)"
 			$x = $xmlSettings.CreateElement("args");
@@ -657,6 +658,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					$skipInstall = true
 					continue
 				}
 			
@@ -666,6 +668,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					$skipInstall = true
 					continue
 				}
 
@@ -679,6 +682,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
+					$skipInstall = true
 					continue
 				}
 
@@ -693,49 +697,53 @@ function Execute-InstallApplications {
 			"choco" {
 				if ($install.package -eq $null) {
 					Write-LogMessage -level 1 -msg "`tSkipping Chocolatey Package as it was not defined"
+					$skipInstall = true
 				}	
 			}
 			"wepbi" {
 				if ($install.package -eq $null) {
 					Write-LogMessage -level 1 -msg "`tSkipping WebPi Package as it was not defined"
+					$skipInstall = true
 				}	
 			}
 			"generic" { 
 			}
 		}
 
-		[string]$args = ""
-		if ($install.args.entry -ne $null) {
-			$args = (($install.args.entry | % { if ($_.value -ne $null -and $_.value.Length -gt 0) { $paramFlagDelim + $_.name + $paramNameValueDelim + "'" + $_.value + "'" } else { $paramFlagDelim + $_.name } }) -join " ")
-		} else {
-			$args = $([string]$install.args)
-		}
-
-		if ($install.pwd -ne $null) {
-			$args = $args -replace "{PASSWORD}", $($install.pwd)
-		} else {
-			$args = $args -replace "{PASSWORD}", "{DEFAULT PASSWORD}"
-		}
-
-		if (($($install.type) -eq "choco") -and $install.package -ne $null) {
-			Execute-InstallChocoPackage $install.package
-		} elseif (($($install.type) -eq "webpi") -and $install.package -ne $null) {
-			Execute-InstallWebPiPackage $install.package
-		} else {
-			if ($args -ne $null -and $args.Length -gt 0) {
-				$args = $args -Replace "{DEFAULT PASSWORD}",$($xmlSettings.configuration.defaultPassword)
-			}
-
+		if ($skipInstall -eq $false) {
+			[string]$args = ""
 			if ($install.args.entry -ne $null) {
-				$install.RemoveChild($install.args)
+				$args = (($install.args.entry | % { if ($_.value -ne $null -and $_.value.Length -gt 0) { $paramFlagDelim + $_.name + $paramNameValueDelim + "'" + $_.value + "'" } else { $paramFlagDelim + $_.name } }) -join " ")
+			} else {
+				$args = $([string]$install.args)
 			}
 
-			$install.SetAttribute("args", $args)
+			if ($install.pwd -ne $null) {
+				$args = $args -replace "{PASSWORD}", $($install.pwd)
+			} else {
+				$args = $args -replace "{PASSWORD}", "{DEFAULT PASSWORD}"
+			}
 
-			Execute-Install $($xmlSettings.configuration.applications.baseFolder) $install
-		}
+			if (($($install.type) -eq "choco") -and $install.package -ne $null) {
+				Execute-InstallChocoPackage $install.package
+			} elseif (($($install.type) -eq "webpi") -and $install.package -ne $null) {
+				Execute-InstallWebPiPackage $install.package
+			} else {
+				if ($args -ne $null -and $args.Length -gt 0) {
+					$args = $args -Replace "{DEFAULT PASSWORD}",$($xmlSettings.configuration.defaultPassword)
+				}
+
+				if ($install.args.entry -ne $null) {
+					$install.RemoveChild($install.args)
+				}
+
+				$install.SetAttribute("args", $args)
+
+				Execute-Install $($xmlSettings.configuration.applications.baseFolder) $install
+			}
 		
-		if ((Get-PendingReboot).RebootPending -eq $true) { Write-LogMessage -level 1 -msg "Reboot Required before we can continue"; return $true }
+			if ((Get-PendingReboot).RebootPending -eq $true) { Write-LogMessage -level 1 -msg "Reboot Required before we can continue"; return $true }
+		}
 	}
 	
 	# SharePoint should be installed AFTER everything else
