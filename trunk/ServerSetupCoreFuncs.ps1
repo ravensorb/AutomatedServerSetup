@@ -642,7 +642,7 @@ function Execute-InstallApplications {
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
 		[bool] $skipInstall = $false
 		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
-			#Write-Host "Args: $($install.args)"
+			#Write-Output "Args: $($install.args)"
 			$x = $xmlSettings.CreateElement("args");
 			$x.SetAttribute("type", "params"); # This is a HACK to get get Powershell to add an actual element instead of an attribute
 			$install.AppendChild($x)
@@ -1141,7 +1141,7 @@ function Compare-Version {
 #-------------------------------------------------------------------------------------------------------------------
 # Function: Add-PinToTaskbar
 # Description:
-#	Executes the Shell verb "Pin to Taskbar" for the specified application
+ #	Executes the Shell verb "Pin to Taskbar" for the specified application
 #-------------------------------------------------------------------------------------------------------------------
 function Add-PinToTaskbar {
 	param([string] $appName, [string] $path, [string] $exeName)
@@ -1245,9 +1245,9 @@ function Write-LogMessage {
 	}
 
 	if ($noNewLine) {
-		Write-Host $msg -ForegroundColor $color -NoNewline
+		Write-Output $msg -ForegroundColor $color -NoNewline
 	} else {
-		Write-Host $msg -ForegroundColor $color 
+		Write-Output $msg -ForegroundColor $color 
 	}
 }
 
@@ -1260,8 +1260,8 @@ Function Show-Progress ($process, $color, $interval)
 {
 	While (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $process -or $_.Path -eq $process})
 	{
-		Write-Host -ForegroundColor $color "." -NoNewline
+		Write-Output -ForegroundColor $color "." -NoNewline
 		Start-Sleep $interval
 	}
-	Write-Host -ForegroundColor $color "Done."
+	Write-Output -ForegroundColor $color "Done."
 }
