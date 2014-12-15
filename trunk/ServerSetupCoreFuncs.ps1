@@ -651,6 +651,7 @@ function Execute-InstallApplications {
 		$paramNameValueDelim = " "
 		$paramFlagDelim = "/"
 	
+		$install.configFile = Replace-TokensInString $($install.configFile) $($xmlSettings.configuration.applications.baseFolder)
 		switch ($($install.type)) {
 			"sql" {
 				$paramNameValueDelim = "="
@@ -658,7 +659,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
-					$skipInstall = true
+					$skipInstall = $true
 					continue
 				}
 			
@@ -668,7 +669,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
-					$skipInstall = true
+					$skipInstall = $true
 					continue
 				}
 
@@ -682,7 +683,7 @@ function Execute-InstallApplications {
 				if ((Test-Path $($install.configFile)) -eq $false) {
 					Write-LogMessage -level 0 -msg "Could not find the specfied configuraton file: $($install.configFile)"
 					Write-LogMessage -level 0 -msg "Skipping Installation: $($install.name)"
-					$skipInstall = true
+					$skipInstall = $true
 					continue
 				}
 
@@ -697,13 +698,13 @@ function Execute-InstallApplications {
 			"choco" {
 				if ($install.package -eq $null) {
 					Write-LogMessage -level 1 -msg "`tSkipping Chocolatey Package as it was not defined"
-					$skipInstall = true
+					$skipInstall = $true
 				}	
 			}
 			"wepbi" {
 				if ($install.package -eq $null) {
 					Write-LogMessage -level 1 -msg "`tSkipping WebPi Package as it was not defined"
-					$skipInstall = true
+					$skipInstall = $true
 				}	
 			}
 			"generic" { 
