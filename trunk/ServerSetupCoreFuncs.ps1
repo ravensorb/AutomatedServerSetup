@@ -19,6 +19,7 @@ function Execute-InitializeScript {
 		#$xmlSettings.configuration.SetAttribute("defaultPassword", $defaultPassword)
 	}
 
+	$xmlSettings.configuration.applications.baseFolder = Replace-TokensInString $($xmlSettings.configuration.applications.baseFolder)
 	return $true
 }
 
@@ -1207,6 +1208,9 @@ function Replace-TokensInString {
 	
 	if ($str -match "{SCRIPT FOLDER}") {
 		$str = $str -replace "{SCRIPT FOLDER}", $($xmlSettings.configuration.workingDirectory)
+	}
+	if ($str -match "{SCRIPT DRIVE}") {
+		$str = $str -replace "{SCRIPT DRIVE}", $($xmlSettings.configuration.workingDrive)
 	}
 	if ($str -match "{BASE FOLDER}") {
 		$str = $str -replace "{BASE FOLDER}", $baseFolder
