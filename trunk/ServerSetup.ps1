@@ -15,6 +15,7 @@ $scriptCommand = $myinvocation.mycommand.definition
 $workingDirectory = $PSScriptRoot
 if ($workingDirectory -eq $null -or $workingDirectory.length -eq 0) {
 	$workingDirectory = Split-Path $scriptCommand
+	$workingDrive = Split-Path $scriptCommand -Qualifier
 }
 
 Write-Output "Script: [$scriptCommand]" -Foregroundcolor Yellow
@@ -63,6 +64,10 @@ $debug = $false
 if ($xmlSettings.configuration.mode -eq "DEBUG") { $debug = $true }
 if ($xmlSettings.configuration.workingDirectory -eq $null) {
 	$xmlSettings.configuration.SetAttribute("workingDirectory", $workingDirectory)
+}
+
+if ($xmlSettings.configuration.workingDrive  -eq $null) {
+	$xmlSettings.configuration.SetAttribute("workingDrive", $workingDrive)
 }
 
 if ($xmlSettings.configuration.version -ne "1.0.1") {
