@@ -146,7 +146,7 @@ function Execute-ComputerServices {
 	Write-LogMessage -level 1 -msg "Checking Services"
 
 	$xmlSettings.configuration.computer.services.service | % { 
-		Write-LogMessage level 1 -msg "`t$($_.name)"
+		Write-LogMessage -level 1 -msg "`t$($_.name)"
 		
 		$svc = (Get-WmiObject -Class Win32_Service -Filter "name='$($_.name)'")
 		$svc = Get-Service -Name $_.name -ErrorAction SilentlyContinue
@@ -184,9 +184,10 @@ function Execute-ComputerSQLAliases {
 	Write-LogMessage -level 1 -msg "Creating SQL Aliases"
 
 	$xmlSettings.configuration.computer.sqlAliases.entry | % { 
-		Write-LogMessage level 1 -msg "`t$_.name"
+		$aliasServer = Replace-TokensInStrin $_.server 
+		Write-LogMessage -level 1 -msg "`t$_.name -> $aliasServer"
 		if (-Not $debug) {
-			Add-SQLAlias -aliasName $_.name -SQLInstance $_.server -port $.port 
+			Add-SQLAlias -aliasName $_.name -SQLInstance $aliasServer -port $.port 
 		}
 	}
 }
@@ -454,12 +455,12 @@ function Execute-InstallWindowsFeatures {
 				
 				return $true
 			} else {
-				Write-LogMessage -level 1 -msg "Unable to validate features installed correctly" -Foregroundcolor Red
+				Write-LogMessage -level 0 -msg "Unable to validate features installed correctly" 
 			}
 		}
 	}
 	catch {
-		Write-LogMessage -level 0 -msg $_.Exception.Message -Foregroundcolor Red
+		Write-LogMessage -level 0 -msg $_.Exception.Message
 	}
 	
 	return $false
@@ -811,7 +812,12 @@ function Execute-AutoSPInstaller {
 	
 	$mount = $null
 	if ($appSettings.iso -ne $null) {
-		$mount = Mount-DiskImage -ImagePath $($appSettings.iso) -PassThru
+		$mount = Mount-DiskImage -ImagePath $($appSettings.iso) -PassThru -ErrorAction SilentlyContinue -ErrorVariable mountErrorMsg
+		if ($mountErrorMsg -like "*user name or password*") {
+			Write-LogMessage -level 0 -msg "Failed to mount ISO from network path.  Unable to authenticate."
+
+			return $false
+		}
 		$mountPath = ($mount | Get-Volume).DriveLetter + ":"
 		$appSettings.folder = $mountPath
 	}
@@ -820,7 +826,12 @@ function Execute-AutoSPInstaller {
 	if ($appSettings.folder -like "\\*")
 	{
 		Write-LogMessage -level 2 -msg "Network Path Detected. Mounting to local drive letter Q"
-		$networkDrive = New-PSDrive -Name Q -Root $($appSettings.folder) -PSProvider FileSystem
+		$networkDrive = New-PSDrive -Name Q -Root $($appSettings.folder) -PSProvider FileSystem -ErrorAction SilentlyContinue -ErrorVariable mountError
+		if ($mountError -like "*the specified drive*does not exist*") {
+			Write-LogMessage -level 0 -msg "Failed to map a network drive."
+
+			return $false
+		}
 		
 		$appSettings.folder = $networkDrive.Name + ":"
 	}
@@ -1040,7 +1051,13 @@ function Execute-Install {
 	if ($install.iso -ne $null) {
 		Write-LogMessage -level 1 -msg "ISO File Detected. Mounting Image now"
 		Write-LogMessage -level 2 -msg "ISO File: $($install.iso)"
-		$mount = Mount-DiskImage -ImagePath $($install.iso) -PassThru
+		$mount = Mount-DiskImage -ImagePath $($install.iso) -PassThru -ErrorAction SilentlyContinue -ErrorVariable mountErrorMsg
+		if ($mountErrorMsg -like "*user name or password*") {
+			Write-LogMessage -level 0 -msg "Failed to mount ISO from network path.  Unable to authenticate."
+
+			return $false
+		}
+
 		$mountPath = ($mount | Get-Volume).DriveLetter + ":"
 		Write-LogMessage -level 1 -msg "Mounted ISO To: $mountPath"
 		$install.SetAttribute("folder", $mountPath) 
@@ -1050,7 +1067,12 @@ function Execute-Install {
 	if ($install.folder -like "\\*")
 	{
 		Write-LogMessage -level 1 -msg "Network Path Detected. Mounting to local drive letter Q"
-		$networkDrive = New-PSDrive -Name Q -Root $($install.folder) -PSProvider FileSystem
+		$networkDrive = New-PSDrive -Name Q -Root $($install.folder) -PSProvider FileSystem -ErrorAction SilentlyContinue -ErrorVariable mountError
+		if ($mountError -like "*the specified drive*does not exist*") {
+			Write-LogMessage -level 0 -msg "Failed to map a network drive."
+
+			return $false
+		}
 
 		$install.SetAttribute("folder", $networkDrive.Name + ":") 
 	}
@@ -1248,6 +1270,22 @@ function Replace-TokensInString {
 	if ($str -match "{SYSTEMDRIVE}") {
 		$str = $str -replace "{SYSTEMDRIVE}", ${env:SystemDrive}
 	}
+	if ($str -match "{COMPUTERNAME}") {
+		$str = $str -replace "{COMPUTERNAME}", ${env:COMPUTERNAME}
+	}
+	if ($str -match "{TEMPDIR}") {
+		$str = $str -replace "{TEMPDIR}", ${env:TEMP}
+	}
+	if ($str -match "{USERNAME}") {
+		$str = $str -replace "{USERNAME}", ${env:USERNAME}
+	}
+	if ($str -match "{USERDOMAIN}") {
+		$str = $str -replace "{USERDOMAIN}", ${env:USERDOMAIN}
+	}
+	if ($str -match "{USERDNSDOMAIN}") {
+		$str = $str -replace "{USERDNSDOMAIN}", ${env:USERDNSDOMAIN}
+	}
+
 
 	#Write-LogMessage -level 1 -msg "`tAfter: $str"
 	
@@ -1270,7 +1308,7 @@ function Write-LogMessage {
 	}
 
 	if ($noNewLine) {
-		Write-Host $msg -ForegroundColor $color -NoNewline
+		Write-Host $msg -ForegroundColor $color -NoNewline 
 	} else {
 		Write-Host $msg -ForegroundColor $color 
 	}
@@ -1285,7 +1323,7 @@ Function Show-Progress ($process, $color, $interval)
 {
 	While (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $process -or $_.Path -eq $process})
 	{
-		Write-Host -ForegroundColor $color "." -NoNewline
+		Write-Host -ForegroundColor $color "." -NoNewline $false
 		Start-Sleep $interval
 	}
 	Write-Host -ForegroundColor $color "Done."

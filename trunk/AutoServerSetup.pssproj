@@ -228,6 +228,7 @@
     <Content Include="PSUtils\Add-DNSEntries.ps1" />
     <Content Include="PSUtils\Add-WUOfflineSync.ps1" />
     <Content Include="PSUtils\Enable-AutoLogon.ps1" />
+    <Content Include="PSUtils\Get-OSVersion.ps1" />
     <Content Include="PSUtils\Get-PendingReboot.ps1" />
     <Content Include="PSUtils\Get-WUAutoUpdateSettings.ps1" />
     <Content Include="PSUtils\Get-WUHistory.ps1" />
@@ -261,6 +262,7 @@
     <Content Include="PSUtils\Test-AutoLogon.ps1" />
     <Content Include="PSUtils\Test-IsAdmin.ps1" />
     <Content Include="PSUtils\Test-IsProcessElevated.ps1" />
+    <Content Include="PSUtils\Test-IsServer.ps1" />
     <Content Include="PSUtils\Test-IsUacEnabled.ps1" />
     <Content Include="PSUtils\Test-Script.ps1" />
     <Content Include="PSUtils\Update-WUModule.ps1" />
