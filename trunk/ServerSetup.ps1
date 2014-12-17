@@ -154,7 +154,7 @@ If ($promptResult -eq 0)
 }
 
 #-------------------------------------------------------------------------------------------------------------------
-foreach($k in $result.keys) { Write-LogMessage -level 1 -msg $k " -> " $result.$k }
+foreach($k in $result.keys) { Write-LogMessage -level 1 -msg "$($k): $($result.$k)" }
 
 Stop-Transcript
 

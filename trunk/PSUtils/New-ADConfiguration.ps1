@@ -296,3 +296,25 @@ function Execute-ActiveDirectoryInstallation {
 	
 	return "success"
 }
+
+#-------------------------------------------------------------------------------------------------------------------
+# Function: Write-LogMessage
+# Description:
+#	Writes a log message and color codes it based on the level (0: error, 1: general, 2: info, 3: highlight
+#-------------------------------------------------------------------------------------------------------------------
+function Write-LogMessage {
+	param([int] $level = 1, [bool] $noNewLine = $false, [string] $msg)
+
+	switch ($level) {
+		0 { $color = "Red" }
+		1 { $color = "White" }
+		2 { $color = "Yellow" }
+		3 { $color = "Green" }
+	}
+
+	if ($noNewLine) {
+		Write-Host $msg -ForegroundColor $color -NoNewline
+	} else {
+		Write-Host $msg -ForegroundColor $color 
+	}
+}
