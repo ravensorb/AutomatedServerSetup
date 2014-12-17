@@ -518,13 +518,17 @@ function Execute-CreateAccounts {
 function Execute-InstallChocolatey {
 	param([xml] $xmlSettings)
 
+	[bool] $skipInstall = $false
 	Write-LogMessage -level 1 -msg "Installing Chocolatey"
 	if (($xmlSettings.configuration.chocolatey -eq $null) -or ($([int]$xmlSettings.configuration.chocolatey.enabled) -eq 0)) {
 		Write-LogMessage -level 1 -msg "`tNot enabled. Skipping installation."
 		
+		$skipInstall = $true
 		return $false
 	}
 	
+	if ($skipInstall) { return $false }
+
 	if (-Not (Get-Command "cinst" -errorAction SilentlyContinue)) {
 		if (-Not $debug) {
 			iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
@@ -554,16 +558,22 @@ function Execute-InstallChocoPackage {
 	Write-LogMessage -level 1 -msg "`tInstalling Package: $($package.name)"
 	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
 		
+	[bool] $skipInstall = $false
+
 	if ($package.installCheck -ne $null) {
 		$package.installCheck | % {
 			$installCheckResult = Execute-InstallCheck -installCheck $_ -baseFolder $baseFolder
 			if ($installCheckResult) {
 				Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-		
+
+				$skipInstall = $true 		
 				return $true
 			}
 		}
 	}
+
+	if ($skipInstall) { return $true }
+
 		
 	if (-Not $debug) {
 		if ($package.source -ne $null -and $package.source -ne "webpi") {
@@ -587,16 +597,22 @@ function Execute-InstallWebPiPackage {
 	Write-LogMessage -level 1 -msg "`tInstalling WebPi Package: $($package.name)"
 	if ($package.source -ne $null) { Write-LogMessage -level 1 -msg "`t`tSource: $($package.source)" }
 		
+	[bool] $skipInstall = $false
+
 	if ($package.installCheck -ne $null) {
 		$package.installCheck | % {
 			$installCheckResult = Execute-InstallCheck $_ $baseFolder
 			if ($installCheckResult) {
 				Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
-		
+	
+				$skipInstall = $true	
 				return $true
 			}
 		}
 	}
+
+	if ($skipInstall) { return $true }
+
 		
 	$logFile = "{SCRIPT FOLDER}\webpi_" + $($package.name) + ".log"
 	$logFile = Replace-TokensInString $logFile $baseFolder
@@ -643,7 +659,7 @@ function Execute-InstallApplications {
 	foreach ($install in ($xmlSettings.configuration.applications.install | Where { ($_.enabled -eq $null -or $_.enabled -ne "0") } | Sort-Object -Property order)) {
 		[bool] $skipInstall = $false
 		if ($install.args -eq $null) { # -or ($install.SelectSingleNode("./args") -eq $null)) {
-			#Write-Output "Args: $($install.args)"
+			#Write-Host "Args: $($install.args)"
 			$x = $xmlSettings.CreateElement("args");
 			$x.SetAttribute("type", "params"); # This is a HACK to get get Powershell to add an actual element instead of an attribute
 			$install.AppendChild($x)
@@ -1006,14 +1022,19 @@ function Execute-Install {
 		$install.SetAttribute("args", ($($install.args) -Replace "{CONFIGFILE}",$($install.configFile)))
 	}
 		
+	[bool] $skipInstall = $false
 	$install.installCheck | % {
 		$installCheckResult = Execute-InstallCheck $_ $baseFolder
 		if ($installCheckResult) {
 			Write-LogMessage -level 1 -msg "`t`tAlready installed. Skipping installation..."
 		
+			$skipInstall = $true
+
 			return $true
 		}
 	}
+	
+	if ($skipInstall) { return $true }
 			
 	$mount = $null
 	if ($install.iso -ne $null) {
@@ -1249,9 +1270,9 @@ function Write-LogMessage {
 	}
 
 	if ($noNewLine) {
-		Write-Output $msg -ForegroundColor $color -NoNewline
+		Write-Host $msg -ForegroundColor $color -NoNewline
 	} else {
-		Write-Output $msg -ForegroundColor $color 
+		Write-Host $msg -ForegroundColor $color 
 	}
 }
 
@@ -1264,8 +1285,8 @@ Function Show-Progress ($process, $color, $interval)
 {
 	While (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $process -or $_.Path -eq $process})
 	{
-		Write-Output -ForegroundColor $color "." -NoNewline
+		Write-Host -ForegroundColor $color "." -NoNewline
 		Start-Sleep $interval
 	}
-	Write-Output -ForegroundColor $color "Done."
+	Write-Host -ForegroundColor $color "Done."
 }

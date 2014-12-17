@@ -15,12 +15,13 @@ $scriptCommand = $myinvocation.mycommand.definition
 $workingDirectory = $PSScriptRoot
 if ($workingDirectory -eq $null -or $workingDirectory.length -eq 0) {
 	$workingDirectory = Split-Path $scriptCommand
-	$workingDrive = Split-Path $scriptCommand -Qualifier
 }
+$workingDrive = Split-Path $workingDirectory -Qualifier
 
-Write-Output "Script: [$scriptCommand]" -Foregroundcolor Yellow
-Write-Output "Working Directory: [$workingDirectory]" -Foregroundcolor Yellow
-Write-Output "Configuration File: [$configurationFile]" -Foregroundcolor Yellow
+Write-Host "Script: [$scriptCommand]" -Foregroundcolor Yellow
+Write-Host "Working Drive: [$workingDrive]" -Foregroundcolor Yellow
+Write-Host "Working Directory: [$workingDirectory]" -Foregroundcolor Yellow
+Write-Host "Configuration File: [$configurationFile]" -Foregroundcolor Yellow
 
 $configurationFile = $configurationFile.Trim() -Replace "'",""
 
@@ -46,7 +47,7 @@ function Restart {
 	#Set-RunOnce -Description "AutoServerSetup" -FileToRun $scriptCommand -Arguments "-configurationFile '$configurationFile'"
 	Set-RunOnce -Description "AutoServerSetup-$step" -FileToRun "$workingDirectory\ServerSetup.bat" -Arguments "'$configurationFile'"
 	
-	Write-Output "The Computer will reboot in 10 seconds...."
+	Write-LogMessage -level 1 -msg "The Computer will reboot in 10 seconds...."
 	sleep 10
 	#Read-Host "Press any key to continue..."
 	Restart-Computer 
@@ -54,10 +55,10 @@ function Restart {
 	exit
 }
 
-Write-Output "Validating script is running under Administrative credentials" -Foregroundcolor Green
+Write-Host "Validating script is running under Administrative credentials" -Foregroundcolor Green
 Force-RunAsAdmin
 
-Write-Output "Loading Configuration File: $configurationFile" -Foregroundcolor Green
+Write-Host "Loading Configuration File: $configurationFile" -Foregroundcolor Green
 $xmlSettings = New-Object -TypeName XML
 $xmlSettings.Load($configurationFile)
 $debug = $false
@@ -71,7 +72,7 @@ if ($xmlSettings.configuration.workingDrive  -eq $null) {
 }
 
 if ($xmlSettings.configuration.version -ne "1.0.1") {
-	Write-Output "Settings File Version number does not match expected version.  Possible incompatibility.  Please review the settings file and update if necessary." -ForegroundColor Red
+	Write-Host "Settings File Version number does not match expected version.  Possible incompatibility.  Please review the settings file and update if necessary." -ForegroundColor Red
 	exit
 }
 
@@ -80,61 +81,62 @@ Import-Module "$workingDirectory\ServerSetupCoreFuncs.ps1" -Force
 $result = @{}
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Initializing Script" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Initializing Script"
 $result["initscript"] = (Execute-InitializeScript $xmlSettings)
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Configuring Local Computer" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Configuring Local Computer"
 $result["localcomputer"] = (Execute-ConfigureLocalComputer $xmlSettings)
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Network Configuration" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Network Configuration"
 $result["network"] = (Execute-NetworkConfiguration $xmlSettings)
 if ($result["network"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Renaming Local Computer" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Renaming Local Computer"
 $result["renamecomputer"] = (Execute-RenameComputer $xmlSettings)
-Write-Output "Checking to see if reboot is required" -Foregroundcolor Green
+Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 2 }
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Configuring Windows Update" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Configuring Windows Update"
 $result["wupdateconfig"] = (Execute-ConfigureWindowsUpdate $xmlSettings)
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Executing Windows Update" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Executing Windows Update"
 $result["wupdate"] = (Execute-WindowsUpdate $xmlSettings)
-Write-Output "Checking to see if reboot is required" -Foregroundcolor Green
+Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 3 }
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Installing Windows Features" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Installing Windows Features"
 $result["features"] = (Execute-InstallWindowsFeatures $xmlSettings)
-Write-Output "Checking to see if reboot is required" -Foregroundcolor Green
+Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 4 }
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Setting up Chocolatey and related packages" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Setting up Chocolatey and related packages"
 $result["chocolatey"] = (Execute-InstallChocolatey $xmlSettings)
+Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 if ((Get-PendingReboot).RebootPending -eq $true) { Restart 1 }
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Installing/Configuring Active Directory" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Installing/Configuring Active Directory"
 $result["ad"] = (New-ADConfiguration -XmlData $xmlSettings)
-Write-Output "Checking to see if reboot is required" -Foregroundcolor Green
+Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 if ($result["ad"] -eq "reboot" -or (Get-PendingReboot).RebootPending -eq $true) { Restart 5 }
 if ($result["ad"] -eq "error") { 
-	Write-Output "AD Installation Failed. Please review logs and rerun the script." -ForegroundColor Red
+	Write-LogMessage -level 0 -msg "AD Installation Failed. Please review logs and rerun the script."
 	exit 
 } 
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Creating Accounts" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Creating Accounts"
 $result["accounts"] = (Execute-CreateAccounts $xmlSettings)
 
 #-------------------------------------------------------------------------------------------------------------------
-Write-Output "Creating DNS Records" -Foregroundcolor Green
+Write-LogMessage -level 3 -msg "Creating DNS Records"
 $result["dns"] = (Execute-ConfigureDNS $xmlSettings)
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -145,13 +147,14 @@ if ($xmlSettings.configuration.applications.prompt -ne $null -and $([int]$xmlSet
 
 If ($promptResult -eq 0)
 {
-	Write-Output "Installing Applications" -Foregroundcolor Green
+	Write-LogMessage -level 3 -msg "Installing Applications"
 	$result["applications"] = (Execute-InstallApplications $xmlSettings)
+	Write-LogMessage -level 2 -msg "Checking to see if reboot is required"
 	if ((Get-PendingReboot).RebootPending -eq $true) { Restart }
 }
 
 #-------------------------------------------------------------------------------------------------------------------
-foreach($k in $result.keys) { Write-Output $k " -> " $result.$k }
+foreach($k in $result.keys) { Write-LogMessage -level 1 -msg $k " -> " $result.$k }
 
 Stop-Transcript
 
