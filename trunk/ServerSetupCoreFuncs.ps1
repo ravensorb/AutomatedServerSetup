@@ -415,20 +415,34 @@ function Execute-NetworkConfiguration {
 #-------------------------------------------------------------------------------------------------------------------
 function Execute-InstallWindowsFeatures {
 	param([xml] $xmlSettings)
+
+	if (Test-IsServer) {
+		Execute-InstallWindowsFeaturesServer $xmlSettings
+	} else {
+		Execute-InstallWindowsFeaturesClient $xmlSettings
+	}
+}
 	
+function Execute-InstallWindowsFeaturesServer {
+	param([xml] $xmlSettings)
+
 	#Import-Module ServerManager
 	if ($xmlSettings.configuration.features -eq $null) { return $true }
 	
 	$featuresToAdd = ($xmlSettings.configuration.features.feature -join ",") -split ","
 	
-	Write-LogMessage -level 1 -msg "Requested Features: $featuresToAdd"
+	Write-LogMessage -level 2 -msg "Installing Windows Features"
+	Write-Verbose "Requested Features:"
+	Write-Verbose "$featuresToAdd"
 	
 	Try {
 		$features = Get-WindowsFeature $featuresToAdd | Where-Object { $_.Installed -eq $false }
 		
 		if (($features -ne $null) -and ($features.Count -gt 0))
 		{
-			Write-LogMessage -level 1 -msg "Adding Requested Features"
+			Write-LogMessage -level 1 -msg "Adding the follownig missing Features"
+			Write-LogMessage -level 1 -msg (($features | % { $_.Name }) -join ", ")
+
 			if ($xmlSettings.configuration.features.source -ne $null -and $xmlSettings.configuration.features.source -ne "{ONLINE}")
 			{
 				if (-Not $debug)
@@ -465,6 +479,64 @@ function Execute-InstallWindowsFeatures {
 	
 	return $false
 }
+
+function Execute-InstallWindowsFeaturesClient {
+	param([xml] $xmlSettings)
+
+	#Import-Module ServerManager
+	if ($xmlSettings.configuration.features -eq $null) { return $true }
+	
+	$featuresToAdd = ($xmlSettings.configuration.features.feature -join ",") -split ","
+	
+	Write-LogMessage -level 2 -msg "Enabling Windows Features"
+	Write-Verbose "Requested Features: $featuresToAdd"
+	Write-Verbose "$featuresToAdd"
+	
+	Try {
+		$features = Get-WindowsOptionalFeature -Online | Where-Object { $_.State -eq "Disabled" } | Select-Object FeatureName
+		
+		if (($features -ne $null) -and ($features.Count -gt 0))
+		{
+			Write-LogMessage -level 1 -msg "Enabling the follownig Features"
+			Write-LogMessage -level 1 -msg $features
+
+			if ($xmlSettings.configuration.features.source -ne $null -and $xmlSettings.configuration.features.source -ne "{ONLINE}")
+			{
+				if (-Not $debug)
+				{
+					$featuresToAddResult = Enable-WindowsOptionalFeature –FeatureName $features -All -source $xmlSettings.configuration.features.source
+				} 
+			} else {
+				if (-Not $debug)
+				{
+					$featuresToAddResult = Enable-WindowsOptionalFeature –Online –FeatureName $features -All
+				} 
+			}
+		
+			if ($featuresToAddResult -ne $null) {
+				$featuresToAddResult | ft
+				
+				foreach ($f in $featuresToAddResult) {
+					if ($f.Success -ne $true) {
+						Write-Warning "Failed to install" $f
+						
+						return $false
+					}
+				}
+				
+				return $true
+			} else {
+				Write-LogMessage -level 0 -msg "Unable to validate features installed correctly" 
+			}
+		}
+	}
+	catch {
+		Write-LogMessage -level 0 -msg $_.Exception.Message
+	}
+	
+	return $false
+}
+
 
 #-------------------------------------------------------------------------------------------------------------------
 # Function: Execute-ConfigureDNS

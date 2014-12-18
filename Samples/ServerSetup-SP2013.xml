@@ -30,9 +30,9 @@
 
 		<!-- SQL aliases -->
 		<sqlAliases>
-			<entry name="SharePointDB" server="" port="1433" />
-			<entry name="ProjectDB" server="" port="1433" />
-			<entry name="WorkflowDB" server="" port="1433" />
+			<entry name="SharePointDB" server="{COMPUTERNAME}" port="1433" />
+			<entry name="ProjectDB" server="{COMPUTERNAME}" port="1433" />
+			<entry name="WorkflowDB" server="{COMPUTERNAME}" port="1433" />
 		</sqlAliases>
 
 		<!-- Windows Services -->
@@ -263,12 +263,12 @@
 		-->
 		<install type="sql" order="1" name="Microsoft SQL Server" iso="{BASE FOLDER}\en_sql_server_2012_developer_edition_with_service_pack_2_x64_dvd_4668513.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\SQL2012-Developer.ini" pwd="pass@word1" enabled="1">
 			<args>
-				<entry name="INSTANCEDIR" value="E:\Microsoft SQL Server"/>
-				<entry name="ASDATADIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Data" />
-				<entry name="ASLOGDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Log" />
-				<entry name="ASBACKUPDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Backup" />
-				<entry name="ASDATADIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Temp" />
-				<entry name="ASCONFIGDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Config" />
+				<entry name="INSTANCEDIR" value="C:\Microsoft SQL Server"/>
+				<entry name="ASDATADIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Data" />
+				<entry name="ASLOGDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Log" />
+				<entry name="ASBACKUPDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Backup" />
+				<entry name="ASTEMPDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Temp" />
+				<entry name="ASCONFIGDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Config" />
 
 				<entry name="ASSYSADMINACCOUNTS" value="Administrators"/>
 				<entry name="SQLSYSADMINACCOUNTS" value="Administrators"/>
@@ -287,7 +287,7 @@
 
 				<entry name="SAPWD" value="{PASSWORD}"/>
 			</args>
-			<installCheck type="folder" folder="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Data"/>
+			<installCheck type="folder" folder="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\OLAP\Data"/>
 			<taskbarLink name="SQL Management Studio" folder="{PROGRAMFILESX86}\Microsoft SQL Server\110\Tools\Binn\ManagementStudio" file="Ssms.exe"/>
 		</install>
 		
@@ -298,12 +298,12 @@
 		-->
 		<install type="sql" order="2" name="Microsoft SQL Server (PowerPivot)" iso="{BASE FOLDER}\en_sql_server_2012_developer_edition_with_service_pack_2_x64_dvd_4668513.iso" command="setup.exe" configFile="{SCRIPT FOLDER}\Config\SQL2012-Developer-POWERPIVOT.ini" pwd="pass@word1" enabled="1">
 			<args>
-				<entry name="INSTANCEDIR" value="E:\Microsoft SQL Server"/>
-				<entry name="ASDATADIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Data" />
-				<entry name="ASLOGDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Log" />
-				<entry name="ASBACKUPDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Backup" />
-				<entry name="ASDATADIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Temp" />
-				<entry name="ASCONFIGDIR" value="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Config" />
+				<entry name="INSTANCEDIR" value="C:\Microsoft SQL Server"/>
+				<entry name="ASDATADIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Data" />
+				<entry name="ASLOGDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Log" />
+				<entry name="ASBACKUPDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Backup" />
+				<entry name="ASTEMPDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Temp" />
+				<entry name="ASCONFIGDIR" value="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Config" />
 
 				<entry name="ASSYSADMINACCOUNTS" value="Administrators"/>
 				<entry name="SQLSYSADMINACCOUNTS" value="Administrators"/>
@@ -322,7 +322,7 @@
 
 				<entry name="SAPWD" value="{PASSWORD}"/>
 			</args>
-			<installCheck type="folder" folder="E:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Data"/>
+			<installCheck type="folder" folder="C:\Microsoft SQL Server\MSAS11.MSSQLSERVER\POWERPIVOT\Data"/>
 		</install>
 		
 		<!-- 
