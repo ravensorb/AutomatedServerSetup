@@ -31,7 +31,9 @@
 		<!-- Windows Services -->
 		<services>
 			<!-- Secondary Logon Service is needed for PowerPivot Thumbnail generation -->
-			<service name="seclogon" startupMode="Automatic" start="1" />
+			<!-- 
+			<service name="seclogon" startupMode="Manual" start="0" />
+			-->
 		</services>
 
 	</computer>
