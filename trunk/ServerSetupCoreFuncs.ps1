@@ -46,21 +46,22 @@ function Execute-ConfigureLocalComputer {
 			Write-LogMessage -level 1 -msg "Autologon already enabled"
 		} else {
 			Write-LogMessage -level 1 -msg "Enabling Auto login"
-			if (-Not $debug) {
-				$autoLoginUserId = $($xmlSettings.configuration.computer.autoLogon.userId)
-				$autoLoginDomain = $($xmlSettings.configuration.computer.autoLogon.domain)
-				$autoLoginPassword = $($xmlSettings.configuration.computer.autoLogon.password)
+	
+			$autoLoginUserId = $($xmlSettings.configuration.computer.autoLogon.userId)
+			$autoLoginDomain = $($xmlSettings.configuration.computer.autoLogon.domain)
+			$autoLoginPassword = $($xmlSettings.configuration.computer.autoLogon.password)
 
-				if ($xmlSettings.configuration.computer.autoLogon.count -eq $null) { $xmlSettings.configuration.computer.autoLogon.SetAttribute("count", 999) }
+			if ($xmlSettings.configuration.computer.autoLogon.count -eq $null) { $xmlSettings.configuration.computer.autoLogon.SetAttribute("count", 999) }
 				
-				if ($autoLoginUserId -eq "{CURRENT USER}") { $autoLoginUserId = $env:username }
-				if ($autoLoginPassword -eq $null) { 
-					$autoLoginCredentials = (Get-Credential -UserName $autoLoginUserId -Message "Autologon").GetNetworkCredential()
-					$autoLoginUserId = $autoLoginCredentials.UserName
-					$autoLoginDomain = $autoLoginCredentials.Domain
-					$autoLoginPassword = $autoLoginCredentials.Password
-				}
+			if ($autoLoginUserId -eq "{CURRENT USER}") { $autoLoginUserId = $env:username }
+			if ($autoLoginPassword -eq $null) { 
+				$autoLoginCredentials = (Get-Credential -UserName $autoLoginUserId -Message "Autologon").GetNetworkCredential()
+				$autoLoginUserId = $autoLoginCredentials.UserName
+				$autoLoginDomain = $autoLoginCredentials.Domain
+				$autoLoginPassword = $autoLoginCredentials.Password
+			}
 				
+			if (-Not $debug) {
 				Enable-Autologon -domainName $autoLoginDomain -userName $autoLoginUserId -password $autoLoginPassword -autoLogonCount $([int]$xmlSettings.configuration.computer.autoLogon.count)
 			}
 		}
@@ -273,7 +274,11 @@ function Execute-RenameComputer {
 		$creds = New-Object System.Management.Automation.PSCredential ($env:username, $passwordSecure)
 		
 		if (-Not $debug) {
-			Rename-Computer -NewName $($xmlSettings.configuration.computer.name) -LocalCredential $creds -Force
+			if ((Get-Command "Rename-Computer") -ne $null) {
+				Rename-Computer -NewName $($xmlSettings.configuration.computer.name) -LocalCredential $creds -Force
+			} else {
+				(Get-WmiObject Win32_ComputerSystem).Rename($($xmlSettings.configuration.computer.name)) | Out-Null
+			}
 		}
 	#$computer = Get-WmiObject Win32_ComputerSystem
 	#if ($computer.Name -ne $($xmlSettings.configuration.computer.name)) {
@@ -432,6 +437,8 @@ function Execute-InstallWindowsFeaturesServer {
 	$featuresToAdd = ($xmlSettings.configuration.features.feature -join ",") -split ","
 	
 	Write-LogMessage -level 2 -msg "Installing Windows Features"
+	Import-Module ServerManager -ErrorAction SilentlyContinue
+
 	Write-Verbose "Requested Features:"
 	Write-Verbose "$featuresToAdd"
 	
@@ -1395,7 +1402,7 @@ Function Show-Progress ($process, $color, $interval)
 {
 	While (Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $process -or $_.Path -eq $process})
 	{
-		Write-Host -ForegroundColor $color "." -NoNewline $false
+		Write-Host -ForegroundColor $color "." -NoNewline
 		Start-Sleep $interval
 	}
 	Write-Host -ForegroundColor $color "Done."

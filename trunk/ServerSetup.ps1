@@ -17,7 +17,6 @@ if ($workingDirectory -eq $null -or $workingDirectory.length -eq 0) {
 	$workingDirectory = Split-Path $scriptCommand
 }
 $workingDrive = Split-Path $workingDirectory -Qualifier
-
 Write-Host "Script: [$scriptCommand]" -Foregroundcolor Yellow
 Write-Host "Working Drive: [$workingDrive]" -Foregroundcolor Yellow
 Write-Host "Working Directory: [$workingDirectory]" -Foregroundcolor Yellow
@@ -26,7 +25,9 @@ Write-Host "Configuration File: [$configurationFile]" -Foregroundcolor Yellow
 $configurationFile = $configurationFile.Trim() -Replace "'",""
 
 # Lets unblock and files
-gci "$workingDirectory" | Unblock-File
+if ((Get-Command "Unblock-File" -errorAction SilentlyContinue) -ne $null) {
+	gci "$workingDirectory" | Unblock-File
+}
 
 # Lets import the modules we need
 Import-Module "$workingDirectory\Carbon" -Force
@@ -45,7 +46,8 @@ function Restart {
 	param([int] $step = 0)
 
 	#Set-RunOnce -Description "AutoServerSetup" -FileToRun $scriptCommand -Arguments "-configurationFile '$configurationFile'"
-	Set-RunOnce -Description "AutoServerSetup-$step" -FileToRun "$workingDirectory\ServerSetup.bat" -Arguments "'$configurationFile'"
+	#Set-RunOnce -Description "AutoServerSetup-$step" -FileToRun "$workingDirectory\ServerSetup.bat" -Arguments "'$configurationFile'"
+	Set-RunOnce -Description "AutoServerSetup-$step" -FileToRun $scriptCommand -Arguments "'$configurationFile'"
 	
 	Write-LogMessage -level 1 -msg "The Computer will reboot in 10 seconds...."
 	sleep 10
