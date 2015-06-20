@@ -75,6 +75,8 @@ Function New-ADConfiguration
 		Return
 	}
 
+	Import-Module ActiveDirectory -ErrorAction SilentlyContinue
+	
 	$xmlSettings = $null
 
 	If($Path -ne $null -and $Path.Length -gt 0) {
@@ -194,23 +196,24 @@ function Execute-ActiveDirectoryInstallation {
 	param([xml] $xmlSettings)
 	
 	Write-LogMessage -level 1 -msg "Checking to see if AD is already installed"
-	$adFeature = Get-WindowsFeature AD-Domain-Services, RSAT-ADDS
-	if ($adFeature.Installed -eq $False) {
-		Write-LogMessage -level 1 -msg "Installing AD Domain Services"
-		
-		if (-Not $debug)
-		{
-			$adFeatureInstall = Add-WindowsFeature $adFeature
-			if ($adFeatureInstall.Success -ne $True) {
-				Write-Error "Failed to install AD Features"
+	"AD-Domain-Services,RSAT-ADDS".split(",") | % { Get-WindowsFeature $_ } | % { 
+		if ($_.Installed -eq $False) {
+			Write-LogMessage -level 1 -msg "Installing AD Domain Services"
+			
+			if (-Not $debug)
+			{
+				$adFeatureInstall = Add-WindowsFeature $_
+				if ($adFeatureInstall.Success -ne $True) {
+					Write-Error "Failed to install AD Features"
 
-				return "error"
-			} elseif ($adFeatureInstall.RestartNeeded -eq "Yes") {
-				return "restart"
+					return "error"
+				} elseif ($adFeatureInstall.RestartNeeded -eq "Yes") {
+					return "restart"
+				}
 			}
 		}
 	}
-
+	
 	Write-LogMessage -level 1 -msg "Checking to see if AD needs to be configured"
 	$adFeature = Get-WindowsFeature AD-Domain-Services 
 	if ($adFeature.Installed -eq $True) {

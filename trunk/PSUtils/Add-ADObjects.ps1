@@ -54,7 +54,11 @@ Function Add-ADObjects
 		[parameter(Mandatory=$false)]
 		[String]$Path = $null,
 		[Parameter(Mandatory=$false)] 
-		[Xml] $XmlData = $null
+		[Xml] $XmlData = $null,
+		[Parameter(Mandatory=$false)] 
+		[bool] $updateExisting = $false,
+		[Parameter(Mandatory=$false)] 
+		[bool] $resetPasswordOnExisting = $false
 	)
 
 	$DefaultName = "AD Objects to AD" 
@@ -205,11 +209,11 @@ function Execute-ActiveDirectoryProcessOU {
 								-AccountPassword $password `
 								-City $account.city `
 								-Company $account.company `
-								-Country $account.contry `
+								-Country $account.country `
 								-Department $account.department `
 								-Description $account.description `
-								-DisplayName $account.dispalyName `
-								-Divisio $account.division `
+								-DisplayName $account.displayName `
+								-Division $account.division `
 								-EmailAddress "$($account.name)@$domain" `
 								-EmployeeID $account.employeeId `
 								-Enabled $True `
@@ -225,11 +229,94 @@ function Execute-ActiveDirectoryProcessOU {
 								-Surname $account.surname `
 								-Title $account.title `
 								-ChangePasswordAtLogon $false `
-								-UserPrincipalName "$($account.name)@$domain" 
+								-UserPrincipalName "$($account.name)@$domain" `
+								-AccountExpirationDate $account.accountExpirationDate `
+								-AccountNotDelegated ([bool]$account.AccountNotDelegated) `
+								-AllowReversiblePasswordEncryption ([bool]$account.allowReversiblePasswordEncryption) `
+								-CannotChangePassword ([bool]$account.cannotChangePassword) `
+								-EmployeeNumber $account.employeeNumber `
+								-Fax $account.fax `
+								-HomeDirectory $account.homeDirectory `
+								-HomeDrive $account.homeDrive `
+								-HomePage $account.homePage `
+								-HomePhone $account.homePhone `
+								-MobilePhone $account.mobilePhone `
+								-OfficePhone $account.officePhone `
+								-PasswordNotRequired ([bool]$account.passwordNotRequired) `
+								-POBox $account.poBox `
+								-PostalCode $account.postalCode `
+								-ProfilePath $account.profilePath `
+								-ScriptPath $account.scriptPath `
+								-SmartcardLogonRequired $account.smartcardLogonRequired `
+								-TrustedForDelegation $account.trustedForDelegation 
 				}
 			} else {
-				Write-LogMessage -level 2 -msg "`tSetting password for account: $($account.name)"
-				Set-ADAccountPassword -Identity $($account.name) -Reset -NewPassword $password
+				if ($resetPasswordOnExisting)
+				{
+					Write-LogMessage -level 2 -msg "`tSetting password for account: $($account.name)"
+					if (-Not $debug)
+					{
+						Set-ADAccountPassword -Identity $($account.name) -Reset -NewPassword $password
+					}
+				}
+				
+				if ($updateExisting)
+				{
+					Write-LogMessage -level 2 -msg "`tUpdatting account: $($account.name)"
+
+					if (-Not $debug)
+					{
+						$replace = @{}
+					
+						$replace["Name"] = $account.name;
+						$replace["AccountPassword"] = $password;
+						$replace["City"] = $account.city;
+						$replace["Company"] = $account.company;
+						$replace["Country"] = $account.country;
+						$replace["Department"] = $account.department;
+						$replace["Description"] = $account.description;
+						$replace["DisplayName"] = $account.displayName;
+						$replace["Division"] = $account.division;
+						$replace["EmailAddress"] = "$($account.name)@$domain";
+						$replace["EmployeeID"] = $account.employeeId;
+						$replace["Enabled"] = $True;
+						$replace["GivenName"] = $account.givenName;
+						$replace["Initials"] = $account.initials;
+						$replace["Manager"] = $account.manager;
+						$replace["Office"] = $account.office;
+						$replace["Organization"] = $account.organization;
+						$replace["PasswordNeverExpires"] = ([bool]$account.passwordNeverExpires);
+						$replace["SamAccountName"] = $account.name;
+						$replace["State"] = $account.state;
+						$replace["StreetAddress"] = $account.streetAddress;
+						$replace["Surname"] = $account.surname;
+						$replace["Title"] = $account.title;
+						$replace["ChangePasswordAtLogon"] = $false;
+						$replace["UserPrincipalName"] = "$($account.name)@$domain";
+						$replace["AccountExpirationDate"] = $account.accountExpirationDate;
+						$replace["AccountNotDelegated"] = ([bool]$account.AccountNotDelegated);
+						$replace["AllowReversiblePasswordEncryption"] = ([bool]$account.allowReversiblePasswordEncryption);
+						$replace["AuthType"] = $account.authType;
+						$replace["CannotChangePassword"] = ([bool]$account.cannotChangePassword);
+						$replace["EmployeeNumber"] = $account.employeeNumber;
+						$replace["Fax"] = $account.fax;
+						$replace["HomeDirectory"] = $account.homeDirectory;
+						$replace["HomeDrive"] = $account.homeDrive;
+						$replace["HomePage"] = $account.homePage;
+						$replace["HomePhone"] = $account.homePhone;
+						$replace["MobilePhone"] = $account.mobilePhone;
+						$replace["OfficePhone"] = $account.officePhone;
+						$replace["PasswordNotRequired"] = ([bool]$account.passwordNotRequired);
+						$replace["POBox"] = $account.poBox;
+						$replace["PostalCode"] = $account.postalCode;
+						$replace["ProfilePath"] = $account.profilePath;
+						$replace["ScriptPath"] = $account.scriptPath;
+						$replace["SmartcardLogonRequired"] = $account.smartcardLogonRequired;
+						$replace["TrustedForDelegation"] = $account.trustedForDelegation
+						
+						Get-ADUser -name $($account.name) | Set-ADUser -Replace $replace
+					}
+				}
 			}
 		}
 	}
