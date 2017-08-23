@@ -30,3 +30,7 @@ And all of this is done via PowerShell and an XML Configuration file.
 
 *Note:* A majority of the scripts until the utils folder have been gathered from other sources on the net.  All original comments, licenses, and ownership information was maintained whenever possible.
 
+# Related Projects
+* https://github.com/brianlala/AutoSPInstaller
+* https://github.com/brianlala/AutoSPSourceBuilder
+* https://autospinstaller.com/
